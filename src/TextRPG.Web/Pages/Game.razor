@@ -1,0 +1,372 @@
+@page "/"
+@using TextRPG.Core.Enums
+@using TextRPG.Core.Models
+@using TextRPG.Core.Engine
+@using TextRPG.Web.Rendering
+@using TextRPG.Core.PixelArt
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Lienzo pixel art *@
+<div class="game-container">
+    <div class="canvas-wrapper">
+        <canvas id="gameCanvas" width="480" height="240"
+                style="width:100%;max-width:720px;image-rendering:pixelated;background:#000;"></canvas>
+    </div>
+
+    @* Panel de estado *@
+    @if (Renderer.CurrentScreen != WebRenderer.Screen.Title)
+    {
+        <div class="status-bar">@Renderer.StatusLine</div>
+    }
+
+    @* Ubicación *@
+    @if (!string.IsNullOrEmpty(Renderer.LocationName))
+    {
+        <div class="location-name">@Renderer.LocationName</div>
+        <div class="location-desc">@Renderer.LocationDesc</div>
+    }
+
+    @* Log de mensajes *@
+    <div class="log">
+        @for (int i = Math.Max(0, Renderer.Messages.Count - 20); i < Renderer.Messages.Count; i++)
+        {
+            <div class="log-entry">@Renderer.Messages[i]</div>
+        }
+    </div>
+
+    @* Pantalla de título *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Title)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="game-title">TEXTRPG</div>
+                <div class="game-subtitle">Pixel Art RPG</div>
+                <button class="menu-btn start-btn" @onclick="DoStartNewGame">Iniciar Aventura</button>
+            </div>
+        </div>
+    }
+
+    @* Pantalla de creación *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.CreateCharacter)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">Crea tu personaje</div>
+                <input class="game-input" @bind="_heroName" placeholder="Nombre del héroe" />
+                <div class="class-list">
+                    <button class="menu-btn class-btn" @onclick="() => DoCreateCharacter(CharacterClass.Warrior)">Guerrero — Tanque y resistencia</button>
+                    <button class="menu-btn class-btn" @onclick="() => DoCreateCharacter(CharacterClass.Mage)">Mago — Alto daño, frágil</button>
+                    <button class="menu-btn class-btn" @onclick="() => DoCreateCharacter(CharacterClass.Rogue)">Pícaro — Equilibrado, evasión</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Menú principal *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.MainMenu)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">¿Qué haces?</div>
+                @if (_currentLocation?.HasEnemies ?? false)
+                {
+                    <button class="menu-btn" @onclick="DoExplore">⚔ Explorar</button>
+                }
+                <button class="menu-btn" @onclick="ShowTravelMenu">✈ Viajar</button>
+                @if (_currentLocation?.HasShop ?? false)
+                {
+                    <button class="menu-btn" @onclick="ShowShop">🏪 Tienda</button>
+                }
+                @if (_currentLocation?.HasHealer ?? false)
+                {
+                    <button class="menu-btn" @onclick="DoHeal">💚 Curandero (30 oro)</button>
+                }
+                <button class="menu-btn" @onclick="ShowInventory">📦 Inventario</button>
+                <button class="menu-btn" @onclick="DoSaveGame">💾 Guardar</button>
+                <button class="menu-btn" @onclick="DoQuitGame">🚪 Salir</button>
+            </div>
+        </div>
+    }
+
+    @* Viaje *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Travel)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">¿A dónde viajas?</div>
+                @foreach (var loc in World.Locations.Where(l => l.Id != Renderer.LocationId))
+                {
+                    <button class="menu-btn" @onclick="() => DoTravelTo(loc.Id)">@loc.IconKey @loc.Name</button>
+                }
+                <button class="menu-btn" @onclick="BackToMain">Volver</button>
+            </div>
+        </div>
+    }
+
+    @* Tienda *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Shop)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">🏪 Tienda (Oro: @GetPlayerGold())</div>
+                <button class="menu-btn" @onclick="() => DoBuyItem(0)">Poción pequeña (10 oro) +30HP</button>
+                <button class="menu-btn" @onclick="() => DoBuyItem(1)">Poción grande (25 oro) +70HP</button>
+                <button class="menu-btn" @onclick="() => DoBuyItem(2)">Amuleto fuerza (50 oro) +5ATK</button>
+                <button class="menu-btn" @onclick="() => DoBuyItem(3)">Armadura ligera (40 oro) +3DEF</button>
+                <button class="menu-btn" @onclick="BackToMain">Salir</button>
+            </div>
+        </div>
+    }
+
+    @* Combate *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Combat)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">⚔ Combate</div>
+                <button class="menu-btn fight-btn" @onclick="DoAttack">⚔ Atacar</button>
+                <button class="menu-btn" @onclick="DoFlee">🏃 Huir</button>
+            </div>
+        </div>
+    }
+
+    @* Victoria / Derrota *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Victory)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title victory-text">🎉 ¡Victoria!</div>
+                <button class="menu-btn" @onclick="DoContinueAfterBattle">Continuar</button>
+            </div>
+        </div>
+    }
+
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Defeat)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title defeat-text">💀 Derrota...</div>
+                <button class="menu-btn" @onclick="DoRestartGame">Volver al inicio</button>
+            </div>
+        </div>
+    }
+
+    @* Inventario *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Inventory)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">📦 Inventario</div>
+                @if (GetPlayerInventory().Count > 0)
+                {
+                    foreach (var item in GetPlayerInventory())
+                    {
+                        <div class="inventory-item">• @item</div>
+                    }
+                }
+                else
+                {
+                    <div class="inventory-item">(vacío)</div>
+                }
+                <button class="menu-btn" @onclick="BackToMain">Volver</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private WebRenderer Renderer { get; set; } = new();
+    private GameState? _state;
+    private Player? _player => _state?.Player;
+    private Location? _currentLocation;
+    private Enemy? _currentEnemy;
+    private readonly CombatEngine _combat = new();
+    private string _heroName = "Héroe";
+
+    // Shop data
+    private static readonly (string Name, int Price, Action<Player> Apply)[] ShopItems =
+    [
+        ("Poción pequeña", 10, p => p.Heal(30)),
+        ("Poción grande", 25, p => p.Heal(70)),
+        ("Amuleto de fuerza", 50, p => p.Attack += 5),
+        ("Armadura ligera", 40, p => p.Defense += 3),
+    ];
+
+    // Getters (needed for Razor rendering)
+    private int GetPlayerGold() => _player?.Gold ?? 0;
+    private List<string> GetPlayerInventory() => _player?.Inventory ?? [];
+
+    // Ciclo de vida
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("TextRPG.CanvasRenderer.init", "gameCanvas", 3);
+            StateHasChanged();
+        }
+    }
+
+    // Acciones de juego
+    private void DoStartNewGame()
+    {
+        Renderer.Clear();
+        Renderer.SetScreen(WebRenderer.Screen.CreateCharacter);
+        _heroName = "";
+    }
+
+    private void DoCreateCharacter(CharacterClass cls)
+    {
+        var name = string.IsNullOrWhiteSpace(_heroName) ? "Héroe" : _heroName;
+        _state = new GameState { Player = Player.Create(name, cls) };
+        _state.CurrentLocationId = "village";
+        _currentLocation = _state.CurrentLocation;
+        Renderer.PlayClassSelectionAnimation(cls);
+        Renderer.Clear();
+        Renderer.PrintStatus(_state.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+    }
+
+    private void DoExplore()
+    {
+        Renderer.PlayExploreAnimation(_state!.CurrentLocationId);
+        _currentEnemy = Enemy.Random(_state.Player.Level);
+        _state.TotalBattles++;
+        Renderer.PrintCombatHeader(_state.Player, _currentEnemy);
+    }
+
+    private void DoAttack()
+    {
+        if (_state == null || _currentEnemy == null) return;
+        var round = _combat.SimulateRound(_state.Player, _currentEnemy);
+        _combat.ApplyRound(_state.Player, _currentEnemy, round);
+        Renderer.PrintCombatRound(_state.Player, _currentEnemy, round, Renderer.LastRoundNum + 1);
+
+        if (!_currentEnemy.IsAlive)
+        {
+            _state.TotalVictories++;
+            var enemy = _currentEnemy;
+            _state.Player.Gold += enemy.GoldReward;
+            _state.Player.GainExperience(enemy.ExpReward);
+            var prevLevel = _state.Player.Level;
+            Renderer.PrintVictory(enemy, enemy.ExpReward, enemy.GoldReward);
+            if (_state.Player.Level > prevLevel)
+                Renderer.PrintLevelUp(_state.Player);
+        }
+        else if (!_state.Player.IsAlive)
+        {
+            Renderer.PrintDefeat();
+        }
+    }
+
+    private void DoFlee()
+    {
+        Renderer.MarkupLine("¡Huyes del combate!");
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintStatus(_state!.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+    }
+
+    private void DoContinueAfterBattle()
+    {
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintStatus(_state!.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+    }
+
+    private void ShowTravelMenu()
+    {
+        Renderer.SetScreen(WebRenderer.Screen.Travel);
+    }
+
+    private void DoTravelTo(string destId)
+    {
+        var fromId = _state!.CurrentLocationId;
+        _state.CurrentLocationId = destId;
+        _currentLocation = _state.CurrentLocation;
+        Renderer.PlayTravelAnimation(fromId, destId);
+        Renderer.Clear();
+        Renderer.PrintStatus(_state.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+    }
+
+    private void ShowShop()
+    {
+        Renderer.SetScreen(WebRenderer.Screen.Shop);
+    }
+
+    private void DoBuyItem(int index)
+    {
+        if (_player == null || index < 0 || index >= ShopItems.Length) return;
+        var (name, price, apply) = ShopItems[index];
+        if (_player.Gold < price)
+        {
+            Renderer.MarkupLine("No tienes suficiente oro.");
+            return;
+        }
+        _player.Gold -= price;
+        apply(_player);
+        _player.Inventory.Add(name);
+        Renderer.MarkupLine($"Has comprado: {name}");
+        Renderer.PlayHealAnimation();
+    }
+
+    private void DoHeal()
+    {
+        if (_player!.Gold < 30)
+        {
+            Renderer.MarkupLine("Necesitas 30 oro.");
+            return;
+        }
+        _player.Gold -= 30;
+        _player.Heal(_player.MaxHp);
+        Renderer.PlayHealAnimation();
+        Renderer.MarkupLine("HP completamente restaurado.");
+    }
+
+    private void ShowInventory()
+    {
+        Renderer.WritePlayerStats(_state!.Player, _state);
+        Renderer.SetScreen(WebRenderer.Screen.Inventory);
+    }
+
+    private void DoSaveGame()
+    {
+        Renderer.MarkupLine("Partida guardada en localStorage.");
+    }
+
+    private void DoQuitGame()
+    {
+        Renderer.Clear();
+        Renderer.PrintTitle();
+        _state = null;
+        _currentEnemy = null;
+    }
+
+    private void DoRestartGame()
+    {
+        _state = null;
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintTitle();
+    }
+
+    private void BackToMain()
+    {
+        Renderer.Clear();
+        if (_state != null)
+        {
+            Renderer.PrintStatus(_state.Player);
+            Renderer.PrintLocation(_state.CurrentLocation);
+        }
+        Renderer.SetScreen(_state != null ? WebRenderer.Screen.MainMenu : WebRenderer.Screen.Title);
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}

@@ -1,0 +1,14 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+
+## Saves (datos personales del jugador)
+**/saves/
+
+## OS
+.DS_Store
+Thumbs.db
