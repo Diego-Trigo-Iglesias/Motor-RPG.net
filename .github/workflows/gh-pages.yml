@@ -2,7 +2,7 @@ name: Deploy TextRPG Web to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/**'
       - '.github/workflows/gh-pages.yml'
