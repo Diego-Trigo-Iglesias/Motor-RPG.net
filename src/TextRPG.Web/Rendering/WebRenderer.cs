@@ -274,6 +274,97 @@ public sealed class WebRenderer
     public bool HasConfirm => _confirmTcs != null;
     public string? ConfirmQuestion => _confirmQuestion;
     public bool IsWaitingForInput => _menuTcs != null || _inputTcs != null || _confirmTcs != null;
+
+    public object GetRenderState(Player? player, Enemy? enemy, GameState? gameState)
+    {
+        var screen = CurrentScreen switch
+        {
+            Screen.Title => "Title",
+            Screen.CreateCharacter => "CreateCharacter",
+            Screen.MainMenu => "MainMenu",
+            Screen.Combat => "Combat",
+            Screen.Victory => "Victory",
+            Screen.Defeat => "Defeat",
+            Screen.Shop => "Shop",
+            Screen.Travel => "Travel",
+            Screen.Inventory => "Inventory",
+            _ => "MainMenu"
+        };
+
+        var menu = CurrentScreen switch
+        {
+            Screen.MainMenu => GetMainMenu(gameState?.CurrentLocation),
+            Screen.Combat => new[] { "[1] Atacar", "[2] Huir" },
+            Screen.Victory => new[] { "[Enter] Continuar" },
+            Screen.Defeat => new[] { "[Enter] Volver al inicio" },
+            Screen.Title => new[] { "[Enter] Iniciar Aventura" },
+            Screen.CreateCharacter => new[] { "[1] Guerrero", "[2] Mago", "[3] Picaro" },
+            Screen.Travel => GetTravelMenu(gameState),
+            Screen.Shop => GetShopMenu(player),
+            Screen.Inventory => new[] { "[Enter] Volver" },
+            _ => Array.Empty<string>()
+        };
+
+        return new
+        {
+            screen,
+            location = LocationId,
+            playerSprite = PlayerSprite,
+            enemySprite = screen == "Combat" || screen == "Victory" ? EnemySprite : null,
+            effectSprite = EffectSprite,
+            locationSprite = LocationSprite,
+            hpBar = player != null ? new { current = player.CurrentHp, max = player.MaxHp } : null,
+            playerHpBar = PlayerHp,
+            enemyHpBar = EnemyHp,
+            playerName = player?.Name ?? "",
+            playerClass = player?.Class.ToString() ?? "",
+            playerLevel = player?.Level ?? 1,
+            playerAtk = player?.Attack ?? 0,
+            playerDef = player?.Defense ?? 0,
+            playerGold = player?.Gold ?? 0,
+            enemyName = EnemyName,
+            locationName = LocationName,
+            locationDesc = LocationDesc,
+            messages = Messages,
+            menu = menu,
+            combatRound = LastRoundNum,
+            animations = new { isCritical = LastRound?.IsCritical ?? false }
+        };
+    }
+
+    private string[] GetMainMenu(Location? loc)
+    {
+        var items = new List<string>();
+        if (loc?.HasEnemies ?? false) items.Add("[1] Explorar");
+        items.Add("[2] Viajar");
+        if (loc?.HasShop ?? false) items.Add("[3] Tienda");
+        if (loc?.HasHealer ?? false) items.Add("[4] Curandero (30 oro)");
+        items.Add("[5] Inventario");
+        return items.ToArray();
+    }
+
+    private string[] GetTravelMenu(GameState? gs)
+    {
+        if (gs == null) return new[] { "[Enter] Volver" };
+        var items = new List<string>();
+        int i = 1;
+        foreach (var loc in World.Locations.Where(l => l.Id != gs.CurrentLocationId))
+            items.Add($"[{i++}] {loc.Name}");
+        items.Add("[B] Volver");
+        return items.ToArray();
+    }
+
+    private string[] GetShopMenu(Player? player)
+    {
+        return new[]
+        {
+            "[1] Pocion pequena (10 oro) +30HP",
+            "[2] Pocion grande (25 oro) +70HP",
+            "[3] Amuleto fuerza (50 oro) +5ATK",
+            "[4] Armadura ligera (40 oro) +3DEF",
+            "[B] Salir"
+        };
+    }
 }
 
 // DTOs para el Canvas
