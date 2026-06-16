@@ -2,9 +2,19 @@
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-blueviolet?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Raylib-cs](https://img.shields.io/badge/Raylib-5.0-green)](https://github.com/ChrisDill/Raylib-cs)
+[![Version](https://img.shields.io/badge/version-1.0.0--demo-blue)](https://github.com/diego-trigo-iglesias/Motor-RPG.net/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Jugar Demo](https://img.shields.io/badge/Jugar-Demo-ff5722?logo=githubpages)](https://diego-trigo-iglesias.github.io/Motor-RPG.net/)
 
 **TextRPG** es un juego de rol de texto con interfaz de terminal PREMIUM, sprites de personajes 48×48 renderizados con Raylib, y fondos dinámicos por localización. Combina lo mejor de un RPG clásico por turnos con una presentación visual moderna y efectos espectaculares.
+
+---
+
+## 🕹️ Probar Demo
+
+👉 **Juega ahora desde tu navegador:** [https://diego-trigo-iglesias.github.io/Motor-RPG.net/](https://diego-trigo-iglesias.github.io/Motor-RPG.net/)
+
+*(Demo en WebAssembly — sin instalación, funciona en PC y móvil)*
 
 ---
 
@@ -93,16 +103,15 @@ dotnet test
 
 ## 🌐 GitHub Pages
 
-La demo web está disponible en:
-[https://diego-trigo-iglesias.github.io/Motor-RPG.net/](https://diego-trigo-iglesias.github.io/Motor-RPG.net/)
+La demo web (v1.0.0-demo) se despliega automáticamente desde la rama `master` usando la carpeta `/docs`.
 
-Para publicar cambios:
+Para publicar cambios manualmente:
 ```bash
 dotnet publish src/TextRPG.Web -c Release -o publish
 # Copiar publish/wwwroot/* a docs/
 ```
 
-Configuración en **Settings > Pages**: Branch `main`, folder `/docs`.
+Configuración en **Settings > Pages**: Branch `master`, folder `/docs`.
 
 ---
 
