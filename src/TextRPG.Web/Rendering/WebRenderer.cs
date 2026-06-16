@@ -86,21 +86,13 @@ public sealed class WebRenderer
         PlayerSprite = SpriteData.FromPixelSprite(PlayerSprites.ForClass(p.Class));
         PlayerHp = new HpBarData { Current = p.CurrentHp, Max = p.MaxHp, Label = "HP" };
 
-        var classIcon = p.Class switch
-        {
-            CharacterClass.Warrior => IconPalette.Warrior,
-            CharacterClass.Mage => IconPalette.Mage,
-            CharacterClass.Rogue => IconPalette.Rogue,
-            _ => IconPalette.DefaultIcon
-        };
-
-        StatusLine = $"{classIcon} {p.Name} ({p.Class} Lv.{p.Level})  " +
+        StatusLine = $"{p.Name}  ({p.Class} Lv.{p.Level})  " +
                      $"Oro: {p.Gold}  ATK: {p.Attack}  DEF: {p.Defense}";
     }
 
     public void PrintLocation(Location loc)
     {
-        LocationName = $"{loc.IconKey}  {loc.Name}";
+        LocationName = loc.Name;
         LocationDesc = loc.Description;
         LocationId = loc.Id;
         LocationSprite = SpriteData.FromPixelSprite(LocationSprites.ForId(loc.Id));
