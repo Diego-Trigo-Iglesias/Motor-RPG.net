@@ -1,0 +1,30 @@
+@using TextRPG.Core.Constants
+@using TextRPG.Core.Models
+
+<div class="menu-overlay">
+    <div class="menu-box">
+        @if (Location?.HasEnemies ?? false)
+        {
+            <button class="menu-btn" @onclick="OnExplore">[1] Explorar</button>
+        }
+        <button class="menu-btn" @onclick="OnTravel">[2] Viajar</button>
+        @if (Location?.HasShop ?? false)
+        {
+            <button class="menu-btn" @onclick="OnShop">[3] Tienda</button>
+        }
+        @if (Location?.HasHealer ?? false)
+        {
+            <button class="menu-btn" @onclick="OnHeal">[4] Curandero (@GameConstants.HealCost oro)</button>
+        }
+        <button class="menu-btn" @onclick="OnInventory">[5] Inventario</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Location? Location { get; set; }
+    [Parameter] public EventCallback OnExplore { get; set; }
+    [Parameter] public EventCallback OnTravel { get; set; }
+    [Parameter] public EventCallback OnShop { get; set; }
+    [Parameter] public EventCallback OnHeal { get; set; }
+    [Parameter] public EventCallback OnInventory { get; set; }
+}

@@ -1,0 +1,448 @@
+@page "/"
+@using TextRPG.Core
+@using TextRPG.Core.Constants
+@using TextRPG.Core.Enums
+@using TextRPG.Core.Models
+@using TextRPG.Core.Engine
+@using TextRPG.Web.Rendering
+@using TextRPG.Core.PixelArt
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="game-container" tabindex="0" @onkeydown="HandleKeyDown">
+    <div class="canvas-wrapper">
+        <canvas id="gameCanvas" width="800" height="450"
+                style="width:100%;max-width:1200px;image-rendering:pixelated;background:#0a0e1e;"></canvas>
+    </div>
+
+    @* Title screen *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Title)
+    {
+        <TitleScreen HasSavedGame="_hasSavedGame"
+                     OnStartNewGame="DoStartNewGame"
+                     OnContinueGame="DoContinueGame" />
+    }
+
+    @* Character creation *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.CreateCharacter)
+    {
+        <CharacterCreation @bind-HeroName="_heroName"
+                           OnSelectClass="OnCharacterCreate" />
+    }
+
+    @* Main menu *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.MainMenu)
+    {
+        <MainMenuScreen Location="_currentLocation"
+                        OnExplore="DoExplore"
+                        OnTravel="ShowTravelMenu"
+                        OnShop="ShowShop"
+                        OnHeal="DoHeal"
+                        OnInventory="ShowInventory" />
+    }
+
+    @* Travel *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Travel)
+    {
+        <TravelPanel CurrentLocationId="Renderer.LocationId"
+                     OnTravelTo="DoTravelTo"
+                     OnBack="BackToMain" />
+    }
+
+    @* Shop *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Shop)
+    {
+        <ShopPanel Player="_player"
+                   OnBuy="DoBuyItem"
+                   OnBack="BackToMain" />
+    }
+
+    @* Combat / Victory / Defeat *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Combat)
+    {
+        <CombatPanel Mode="CombatPanel.CombatMode.Fighting"
+                     OnAttack="DoAttack"
+                     OnFlee="DoFlee" />
+    }
+    else if (Renderer.CurrentScreen == WebRenderer.Screen.Victory)
+    {
+        <CombatPanel Mode="CombatPanel.CombatMode.Victory"
+                     OnContinue="DoContinueAfterBattle" />
+    }
+    else if (Renderer.CurrentScreen == WebRenderer.Screen.Defeat)
+    {
+        <CombatPanel Mode="CombatPanel.CombatMode.Defeat"
+                     OnRestart="DoRestartGame" />
+    }
+
+    @* Inventory *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Inventory)
+    {
+        <InventoryPanel Inventory="GetPlayerInventory()"
+                        EquippedItems="GetEquippedItems()"
+                        OnBack="BackToMain" />
+    }
+</div>
+
+@code {
+    private WebRenderer Renderer { get; set; } = new();
+    private GameState? _state;
+    private Player? _player => _state?.Player;
+    private Location? _currentLocation;
+    private Enemy? _currentEnemy;
+    private readonly CombatEngine _combat = new();
+    private string _heroName = "Héroe";
+    private bool _hasSavedGame = false;
+
+    private int GetPlayerGold() => _player?.Gold ?? 0;
+    private List<Item> GetPlayerInventory() => _player?.Inventory ?? [];
+    private List<Item> GetEquippedItems() => _player?.GetEquippedItems() ?? [];
+
+    private async Task AutoSave()
+    {
+        if (_state == null) return;
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(_state);
+            await JS.InvokeVoidAsync("TextRPG.Renderer.saveGame", json);
+        }
+        catch { /* Silently fail - save is non-critical */ }
+    }
+
+    private async Task<bool> TryAutoLoad()
+    {
+        try
+        {
+            var hasSave = await JS.InvokeAsync<bool>("TextRPG.Renderer.hasSave");
+            if (!hasSave) return false;
+            var json = await JS.InvokeAsync<string>("TextRPG.Renderer.loadGame");
+            if (string.IsNullOrEmpty(json)) return false;
+            _state = System.Text.Json.JsonSerializer.Deserialize<GameState>(json);
+            if (_state == null) return false;
+            _currentLocation = _state.CurrentLocation;
+            Renderer.Clear();
+            Renderer.PrintStatus(_state.Player);
+            Renderer.PrintLocation(_state.CurrentLocation);
+            Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+            Renderer.MarkupLine("Partida cargada automáticamente.");
+            return true;
+        }
+        catch { return false; }
+    }
+
+    private async Task DoContinueGame()
+    {
+        Renderer.Clear();
+        var loaded = await TryAutoLoad();
+        if (!loaded)
+        {
+            Renderer.MarkupLine("No se encontró partida guardada.");
+            Renderer.SetScreen(WebRenderer.Screen.Title);
+        }
+        await PushRenderState();
+    }
+
+    private async Task DeleteAutoSave()
+    {
+        await JS.InvokeVoidAsync("TextRPG.Renderer.deleteSave");
+    }
+
+    private async Task OnCharacterCreate(CharacterClass cls) => await DoCreateCharacter(cls);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("TextRPG.Renderer.init", "gameCanvas", 2);
+            // Check if there's a saved game (for Continue button)
+            _hasSavedGame = await JS.InvokeAsync<bool>("TextRPG.Renderer.hasSave");
+            // Try to auto-load saved game
+            var loaded = await TryAutoLoad();
+            if (!loaded)
+            {
+                Renderer.PrintTitle();
+            }
+            // Auto-focus the game container for keyboard input
+            await JS.InvokeVoidAsync("TextRPG.Renderer.focusGame");
+        }
+        await PushRenderState();
+    }
+
+    private async Task HandleKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        switch (Renderer.CurrentScreen)
+        {
+            case WebRenderer.Screen.Title:
+                await HandleTitleKey(e.Key);
+                break;
+            case WebRenderer.Screen.MainMenu:
+                await HandleMainMenuKey(e.Key);
+                break;
+            case WebRenderer.Screen.Combat:
+                await HandleCombatKey(e.Key);
+                break;
+            case WebRenderer.Screen.Shop:
+                await HandleShopKey(e.Key);
+                break;
+            case WebRenderer.Screen.Travel:
+                await HandleTravelKey(e.Key);
+                break;
+            case WebRenderer.Screen.CreateCharacter:
+                await HandleCreateCharKey(e.Key);
+                break;
+            case WebRenderer.Screen.Inventory:
+            case WebRenderer.Screen.Victory:
+            case WebRenderer.Screen.Defeat:
+                if (e.Key is "Enter" or " ") BackToMain();
+                break;
+        }
+    }
+
+    private async Task HandleTitleKey(string key)
+    {
+        switch (key)
+        {
+            case "Enter":
+            case " ":
+                await DoStartNewGame();
+                break;
+            case "2":
+                await DoContinueGame();
+                break;
+        }
+    }
+
+    private async Task HandleMainMenuKey(string key)
+    {
+        switch (key)
+        {
+            case "1" when _currentLocation?.HasEnemies ?? false:
+                await DoExplore(); break;
+            case "2":
+                ShowTravelMenu(); break;
+            case "3" when _currentLocation?.HasShop ?? false:
+                ShowShop(); break;
+            case "4" when _currentLocation?.HasHealer ?? false:
+                await DoHeal(); break;
+            case "5":
+                ShowInventory(); break;
+            case "S" or "s":
+                // Save handled by Desktop only; web auto-saves
+                break;
+            case "L" or "l":
+                // Load: auto-load on startup
+                break;
+        }
+    }
+
+    private async Task HandleCombatKey(string key)
+    {
+        switch (key)
+        {
+            case "1": await DoAttack(); break;
+            case "2": await DoFlee(); break;
+        }
+    }
+
+    private async Task HandleShopKey(string key)
+    {
+        if (key is "B" or "b" or "Escape")
+        {
+            BackToMain();
+            return;
+        }
+        if (int.TryParse(key, out int num) && num >= 1 && num <= ShopCatalog.Items.Length)
+            await DoBuyItem(num - 1);
+    }
+
+    private async Task HandleTravelKey(string key)
+    {
+        if (key is "B" or "b" or "Escape")
+        {
+            BackToMain();
+            return;
+        }
+        if (int.TryParse(key, out int num) && num >= 1)
+            await SelectTravelByIndex(num - 1);
+    }
+
+    private async Task HandleCreateCharKey(string key)
+    {
+        switch (key)
+        {
+            case "1": await DoCreateCharacter(CharacterClass.Warrior); break;
+            case "2": await DoCreateCharacter(CharacterClass.Mage); break;
+            case "3": await DoCreateCharacter(CharacterClass.Rogue); break;
+        }
+    }
+
+    private async Task SelectTravelByIndex(int index)
+    {
+        var destinations = World.Locations.Where(l => l.Id != Renderer.LocationId).ToList();
+        if (index < destinations.Count)
+            await DoTravelTo(destinations[index].Id);
+    }
+
+    private async Task PushRenderState()
+    {
+        try
+        {
+            var state = Renderer.GetRenderState(_player, _currentEnemy, _state);
+            await JS.InvokeVoidAsync("TextRPG.Renderer.pushState", state);
+        }
+        catch { }
+    }
+
+    private async Task DoStartNewGame()
+    {
+        Renderer.Clear();
+        Renderer.SetScreen(WebRenderer.Screen.CreateCharacter);
+        _heroName = "";
+        await PushRenderState();
+    }
+
+    private async Task DoCreateCharacter(CharacterClass cls)
+    {
+        _state = GameActions.CreatePlayer(_heroName, cls);
+        _currentLocation = _state.CurrentLocation;
+        Renderer.PlayClassSelectionAnimation(cls);
+        Renderer.Clear();
+        Renderer.PrintStatus(_state.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoExplore()
+    {
+        _currentEnemy = Enemy.Random(_state!.Player.Level);
+        _state.TotalBattles++;
+        Renderer.PrintCombatHeader(_state.Player, _currentEnemy);
+        await PushRenderState();
+    }
+
+    private async Task DoAttack()
+    {
+        if (_state == null || _currentEnemy == null) return;
+        var round = _combat.SimulateRound(_state.Player, _currentEnemy);
+        _combat.ApplyRound(_state.Player, _currentEnemy, round);
+        Renderer.PrintCombatRound(_state.Player, _currentEnemy, round, Renderer.LastRoundNum + 1);
+
+        if (!_currentEnemy.IsAlive)
+        {
+            _state.TotalVictories++;
+            var enemy = _currentEnemy;
+            _state.Player.Gold += enemy.GoldReward;
+            _state.Player.GainExperience(enemy.ExpReward);
+            var prevLevel = _state.Player.Level;
+            Renderer.PrintVictory(enemy, enemy.ExpReward, enemy.GoldReward);
+            if (_state.Player.Level > prevLevel)
+                Renderer.PrintLevelUp(_state.Player);
+        }
+        else if (!_state.Player.IsAlive)
+        {
+            Renderer.PrintDefeat();
+        }
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoFlee()
+    {
+        Renderer.MarkupLine("Huyes del combate!");
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintStatus(_state!.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoContinueAfterBattle()
+    {
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintStatus(_state!.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private void ShowTravelMenu()
+    {
+        Renderer.SetScreen(WebRenderer.Screen.Travel);
+    }
+
+    private async Task DoTravelTo(string destId)
+    {
+        var msg = GameActions.TravelTo(_state!, destId);
+        _currentLocation = _state!.CurrentLocation;
+        Renderer.PlayTravelAnimation(Renderer.LocationId, destId);
+        Renderer.Clear();
+        Renderer.PrintStatus(_state.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
+        Renderer.MarkupLine(msg);
+        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private void ShowShop()
+    {
+        Renderer.SetScreen(WebRenderer.Screen.Shop);
+    }
+
+    private async Task DoBuyItem(int index)
+    {
+        if (_player == null) return;
+        var result = GameActions.BuyItem(_player, index);
+        if (!result.Success && result.Item == null) return; // índice inválido
+        Renderer.MarkupLine(result.Message);
+        Renderer.PlayHealAnimation();
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoHeal()
+    {
+        if (_player == null) return;
+        var result = GameActions.Heal(_player);
+        Renderer.MarkupLine(result.Message);
+        if (result.Success)
+            Renderer.PlayHealAnimation();
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private void ShowInventory()
+    {
+        Renderer.WritePlayerStats(_state!.Player, _state);
+        Renderer.SetScreen(WebRenderer.Screen.Inventory);
+    }
+
+    private void BackToMain()
+    {
+        Renderer.Clear();
+        if (_state != null)
+        {
+            Renderer.PrintStatus(_state.Player);
+            Renderer.PrintLocation(_state.CurrentLocation);
+        }
+        Renderer.SetScreen(_state != null ? WebRenderer.Screen.MainMenu : WebRenderer.Screen.Title);
+    }
+
+    private async Task DoRestartGame()
+    {
+        _state = null;
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.PrintTitle();
+        await DeleteAutoSave();
+        await PushRenderState();
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}

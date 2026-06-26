@@ -1,0 +1,39 @@
+@* Combat, Victory, and Defeat overlays *@
+
+@if (Mode == CombatMode.Fighting)
+{
+    <div class="menu-overlay">
+        <div class="menu-box">
+            <button class="menu-btn fight-btn" @onclick="async () => await OnAttack.InvokeAsync()">[1] Atacar</button>
+            <button class="menu-btn" @onclick="async () => await OnFlee.InvokeAsync()">[2] Huir</button>
+        </div>
+    </div>
+}
+else if (Mode == CombatMode.Victory)
+{
+    <div class="menu-overlay">
+        <div class="menu-box">
+            <div class="menu-title victory-text">Victoria!</div>
+            <button class="menu-btn" @onclick="async () => await OnContinue.InvokeAsync()">[Enter] Continuar</button>
+        </div>
+    </div>
+}
+else if (Mode == CombatMode.Defeat)
+{
+    <div class="menu-overlay">
+        <div class="menu-box">
+            <div class="menu-title defeat-text">Derrota...</div>
+            <button class="menu-btn" @onclick="async () => await OnRestart.InvokeAsync()">[Enter] Volver al inicio</button>
+        </div>
+    </div>
+}
+
+@code {
+    public enum CombatMode { Fighting, Victory, Defeat }
+
+    [Parameter] public CombatMode Mode { get; set; }
+    [Parameter] public EventCallback OnAttack { get; set; }
+    [Parameter] public EventCallback OnFlee { get; set; }
+    [Parameter] public EventCallback OnContinue { get; set; }
+    [Parameter] public EventCallback OnRestart { get; set; }
+}

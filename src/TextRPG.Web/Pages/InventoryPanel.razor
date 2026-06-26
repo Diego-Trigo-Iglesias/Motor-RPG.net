@@ -1,0 +1,40 @@
+@using TextRPG.Core.Models
+
+<div class="menu-overlay">
+    <div class="menu-box">
+        <div class="menu-title">Inventario</div>
+        @{
+            var eq = EquippedItems;
+            if (eq.Count > 0)
+            {
+                <div class="equipped-section">
+                    <div class="inventory-item equipped-label">[EQUIPADO]</div>
+                    @foreach (var item in eq)
+                    {
+                        <div class="inventory-item">  @item.ToDetailString()</div>
+                    }
+                </div>
+            }
+        }
+        @if (Inventory.Count > 0)
+        {
+            <div class="inventory-items">
+                @foreach (var item in Inventory)
+                {
+                    <div class="inventory-item">- @item.ToDetailString()</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="inventory-item">(vacío)</div>
+        }
+        <button class="menu-btn" @onclick="async () => await OnBack.InvokeAsync()">[Enter] Volver</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<Item> Inventory { get; set; } = [];
+    [Parameter] public List<Item> EquippedItems { get; set; } = [];
+    [Parameter] public EventCallback OnBack { get; set; }
+}

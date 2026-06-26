@@ -1,0 +1,249 @@
+/* TextRPG Web — Estilo pixel art */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    overflow-x: hidden;
+}
+
+.game-container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 12px;
+    min-height: 100vh;
+}
+
+/* Canvas */
+.canvas-wrapper {
+    background: #000;
+    border: 2px solid #444;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.canvas-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* Status bar */
+.status-bar {
+    background: #16213e;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #ffd700;
+    word-break: break-all;
+}
+
+/* Location */
+.location-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 4px;
+}
+
+.location-desc {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Log */
+.log {
+    background: #0f0f1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.log-entry {
+    padding: 1px 0;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.log-entry:first-child {
+    border-top: none;
+}
+
+/* Menús */
+.menu-overlay {
+    margin-top: 8px;
+}
+
+.menu-box {
+    background: #16213e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 16px;
+}
+
+.menu-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.menu-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    margin-bottom: 6px;
+    background: #0f3460;
+    color: #e0e0e0;
+    border: 1px solid #1a5276;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+}
+
+.menu-btn:hover {
+    background: #1a5276;
+    border-color: #ffd700;
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.menu-btn:active {
+    transform: translateX(0px);
+}
+
+.start-btn {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    background: #2d6a2d;
+    border-color: #4a8c4a;
+}
+
+.start-btn:hover {
+    background: #3a8a3a;
+}
+
+.fight-btn {
+    background: #6a2d2d;
+    border-color: #8c3a3a;
+}
+
+/* Game title */
+.game-title {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    letter-spacing: 6px;
+    margin-bottom: 4px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.game-subtitle {
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Character creation */
+.game-input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+
+.game-input:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+
+.class-list {
+    margin-top: 8px;
+}
+
+.class-btn {
+    font-size: 12px;
+}
+
+/* Textos especiales */
+.victory-text {
+    color: #4aff4a;
+    font-size: 18px;
+}
+
+.defeat-text {
+    color: #ff4444;
+    font-size: 18px;
+}
+
+.inventory-item {
+    padding: 4px 0;
+    font-size: 12px;
+    color: #ccc;
+}
+
+/* Scrollbar */
+.log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log::-webkit-scrollbar-track {
+    background: #0f0f1a;
+}
+
+.log::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.log::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .game-container {
+        padding: 8px;
+    }
+
+    .game-title {
+        font-size: 28px;
+        letter-spacing: 4px;
+    }
+
+    .menu-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}

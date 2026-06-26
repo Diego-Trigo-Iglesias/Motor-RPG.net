@@ -1,0 +1,71 @@
+namespace TextRPG.Core.PixelArt;
+
+public static class EffectSprites
+{
+    private static readonly PixelColor SW = new(230, 230, 240);
+    private static readonly PixelColor CY = new(255, 220, 50);
+    private static readonly PixelColor CO = new(255, 160, 30);
+    private static readonly PixelColor HG = new(80, 220, 80);
+    private static readonly PixelColor HL = new(160, 255, 160);
+    private static readonly PixelColor VY = new(255, 210, 40);
+
+    /// Corte 16×8.
+    public static PixelSprite Slash => _slash.Value;
+    private static readonly Lazy<PixelSprite> _slash = new(() => PixelSprite.FromAscii([
+        "          sssss   ",
+        "       sssssssss  ",
+        "   sssssssssssssss",
+        " sssssssssssssssss",
+        "sssssssssssssssss ",
+        " sssssssssssssss  ",
+        "   sssssssssss    ",
+        "       ssss       ",
+    ], new() { ['s'] = SW }));
+
+    /// Explosión crítica 16×12.
+    public static PixelSprite CriticalHit => _crit.Value;
+    private static readonly Lazy<PixelSprite> _crit = new(() => PixelSprite.FromAscii([
+        "    y  y  y       ",
+        "   yoyoyoyoy      ",
+        "  yyyyyyyyyyy     ",
+        "  yoyoyoyoyoy     ",
+        " yyyyyyyyyyyyy    ",
+        " yyyyyyyyyyyyy    ",
+        "  yoyoyoyoyoy     ",
+        "  yyyyyyyyyyy     ",
+        "   yoyoyoyoy      ",
+        "    yyyyyyy       ",
+        "     yyyyy        ",
+        "      yyy         ",
+    ], new() { ['y'] = CY, ['o'] = CO }));
+
+    /// Curación 12×10.
+    public static PixelSprite Heal => _heal.Value;
+    private static readonly Lazy<PixelSprite> _heal = new(() => PixelSprite.FromAscii([
+        "      g           ",
+        "     ggg          ",
+        "    ggggg         ",
+        "   ggggggg        ",
+        "  ggggggggg       ",
+        "  lllllllll       ",
+        "   lllllll        ",
+        "    lllll         ",
+        "     lll          ",
+        "      l           ",
+    ], new() { ['g'] = HG, ['l'] = HL }));
+
+    /// Victoria 14×10.
+    public static PixelSprite Victory => _victory.Value;
+    private static readonly Lazy<PixelSprite> _victory = new(() => PixelSprite.FromAscii([
+        " y y y y y y      ",
+        "yyyyyyyyyyyyy     ",
+        " yyyyyyyyyyy      ",
+        "  yyyyyyyyy       ",
+        " yyyyyyyyyyy      ",
+        "yyyyyyyyyyyyy     ",
+        " y y y y y y      ",
+        " y y y y y y      ",
+        "   yyyyyyy        ",
+        "    yyyyy         ",
+    ], new() { ['y'] = VY }));
+}

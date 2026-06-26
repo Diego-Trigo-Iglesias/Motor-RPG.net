@@ -1,0 +1,25 @@
+@using TextRPG.Core.Enums
+
+<div class="menu-overlay">
+    <div class="menu-box">
+        <div class="menu-title">Crea tu personaje</div>
+        <input class="game-input" @bind="HeroName" @bind:event="oninput" placeholder="Nombre del héroe" />
+        <div class="class-list">
+            <button class="menu-btn class-btn warrior-btn" @onclick="() => HandleClassSelect(CharacterClass.Warrior)">[1] Guerrero - Tanque y resistencia</button>
+            <button class="menu-btn class-btn mage-btn" @onclick="() => HandleClassSelect(CharacterClass.Mage)">[2] Mago - Alto daño, frágil</button>
+            <button class="menu-btn class-btn rogue-btn" @onclick="() => HandleClassSelect(CharacterClass.Rogue)">[3] Pícaro - Equilibrado, evasión</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string HeroName { get; set; } = "";
+    [Parameter] public EventCallback<string> HeroNameChanged { get; set; }
+    [Parameter] public EventCallback<CharacterClass> OnSelectClass { get; set; }
+
+    private async Task HandleClassSelect(CharacterClass cls)
+    {
+        await OnSelectClass.InvokeAsync(cls);
+    }
+}
+

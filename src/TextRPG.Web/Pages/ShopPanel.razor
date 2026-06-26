@@ -1,0 +1,21 @@
+@using TextRPG.Core.Constants
+@using TextRPG.Core.Enums
+@using TextRPG.Core.Models
+
+<div class="menu-overlay">
+    <div class="menu-box">
+        <div class="menu-title">Tienda (Oro: @Player?.Gold ?? 0)</div>
+        @for (int idx = 0; idx < ShopCatalog.Items.Length; idx++)
+        {
+            var item = ShopCatalog.Items[idx];
+            <button class="menu-btn" @onclick="async () => await OnBuy.InvokeAsync(idx)">@ShopCatalog.HtmlMenuItem(idx + 1)</button>
+        }
+        <button class="menu-btn" @onclick="async () => await OnBack.InvokeAsync()">[B] Salir</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Player? Player { get; set; }
+    [Parameter] public EventCallback<int> OnBuy { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+}

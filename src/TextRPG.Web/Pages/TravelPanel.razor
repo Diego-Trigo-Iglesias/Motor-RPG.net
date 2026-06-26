@@ -1,0 +1,22 @@
+@using TextRPG.Core.Models
+
+<div class="menu-overlay">
+    <div class="menu-box">
+        <div class="menu-title">Viajar</div>
+        @{
+            int i = 1;
+            foreach (var loc in World.Locations.Where(l => l.Id != CurrentLocationId))
+            {
+                var locId = loc.Id;
+                <button class="menu-btn" @onclick="async () => await OnTravelTo.InvokeAsync(locId)">[@(i++)] @loc.Name</button>
+            }
+        }
+        <button class="menu-btn" @onclick="async () => await OnBack.InvokeAsync()">[B] Volver</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? CurrentLocationId { get; set; }
+    [Parameter] public EventCallback<string> OnTravelTo { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+}
