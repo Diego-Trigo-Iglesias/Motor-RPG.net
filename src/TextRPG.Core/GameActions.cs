@@ -29,9 +29,9 @@ public static class GameActions
             return new BuyResult(true, item, "Has equipado: " + item.Name + ".");
         }
 
-        p.Heal(item.HealAmount);
+        // Las pociones se almacenan en el inventario; el jugador debe usarlas manualmente.
         p.Inventory.Add(item);
-        return new BuyResult(true, item, "Has comprado: " + item.Name + ".");
+        return new BuyResult(true, item, "Has comprado: " + item.Name + " (en inventario).");
     }
 
     /// <summary>Intenta curar al jugador. Modifica sus stats y devuelve el resultado.</summary>
@@ -51,6 +51,24 @@ public static class GameActions
         gs.CurrentLocationId = destId;
         return "Viajando a " + gs.CurrentLocation?.Name + "...";
     }
+
+    /// <summary>Usa una poción del inventario si hay disponible. Devuelve mensaje y si se usó.</summary>
+    public static (bool Used, string Message, Item? Potion) UsePotion(Player p)
+    {
+        var potion = p.Inventory.FirstOrDefault(item => item.HealAmount > 0);
+        if (potion == null)
+            return (false, "No tienes pociones en el inventario.", null);
+
+        p.Heal(potion.HealAmount);
+        p.Inventory.Remove(potion);
+        return (true, $"Usaste {potion.Name}! +{potion.HealAmount} HP.", potion);
+    }
+
+    /// <summary>Indica si el jugador tiene al menos una poción usable.</summary>
+    public static bool HasUsablePotion(Player p) => p.Inventory.Any(item => item.HealAmount > 0);
+
+    /// <summary>Cantidad de pociones en el inventario.</summary>
+    public static int PotionCount(Player p) => p.Inventory.Count(item => item.HealAmount > 0);
 
     /// <summary>Crea un jugador y el estado inicial del juego.</summary>
     public static GameState CreatePlayer(string name, CharacterClass cls)

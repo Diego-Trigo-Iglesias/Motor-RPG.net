@@ -1,3 +1,4 @@
+@using TextRPG.Core
 @using TextRPG.Core.Models
 
 <div class="menu-overlay">
@@ -8,10 +9,10 @@
             if (eq.Count > 0)
             {
                 <div class="equipped-section">
-                    <div class="inventory-item equipped-label">[EQUIPADO]</div>
+                    <div class="inventory-section-title">EQUIPADO</div>
                     @foreach (var item in eq)
                     {
-                        <div class="inventory-item">  @item.ToDetailString()</div>
+                        <div class="inventory-item">• @item.ToDetailString()</div>
                     }
                 </div>
             }
@@ -19,17 +20,23 @@
         @if (Inventory.Count > 0)
         {
             <div class="inventory-items">
+                <div class="inventory-section-title">INVENTARIO</div>
                 @foreach (var item in Inventory)
                 {
-                    <div class="inventory-item">- @item.ToDetailString()</div>
+                    <div class="inventory-item">• @item.ToDetailString()</div>
                 }
             </div>
         }
         else
         {
-            <div class="inventory-item">(vacío)</div>
+            <div class="inventory-item empty">(inventario vacío)</div>
         }
-        <button class="menu-btn" @onclick="async () => await OnBack.InvokeAsync()">[Enter] Volver</button>
+        @if (HasPotion)
+        {
+            <button class="menu-btn potion-btn" @onclick="async () => await OnUsePotion.InvokeAsync()">[U] Usar poción (@PotionCount)</button>
+        }
+        <button class="menu-btn" @onclick="async () => await OnBack.InvokeAsync()">[ENTER] Volver</button>
+        <div class="help-bar">[U] Usar poción · [ENTER] Volver</div>
     </div>
 </div>
 
@@ -37,4 +44,8 @@
     [Parameter] public List<Item> Inventory { get; set; } = [];
     [Parameter] public List<Item> EquippedItems { get; set; } = [];
     [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public EventCallback OnUsePotion { get; set; }
+
+    private bool HasPotion => Inventory.Any(item => item.HealAmount > 0);
+    private int PotionCount => Inventory.Count(item => item.HealAmount > 0);
 }

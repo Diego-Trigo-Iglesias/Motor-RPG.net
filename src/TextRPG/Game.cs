@@ -99,6 +99,7 @@ public sealed class Game : IDisposable
                 else if (_inp.WasNumberPressed(3) && (_loc?.HasShop ?? false)) IrTienda();
                 else if (_inp.WasNumberPressed(4) && (_loc?.HasHealer ?? false)) Curar();
                 else if (_inp.WasNumberPressed(5)) MostrarInventario();
+                else if (_inp.WasNumberPressed(6) && (_pl != null && GameActions.HasUsablePotion(_pl))) UsarPocion();
                 else if (_inp.WasSPressedThisFrame) { _scr = Scr.Save; _saveMsg = ""; _saveSlots = []; CargarSlotsGuardado(); Menus.ShowSave(_ren, _saveSlots, _saveMsg); }
                 else if (_inp.WasLPressedThisFrame) { _scr = Scr.Load; _saveMsg = ""; _saveSlots = []; CargarSlotsGuardado(); Menus.ShowLoad(_ren, _saveSlots, _saveMsg); }
                 break;
@@ -106,6 +107,7 @@ public sealed class Game : IDisposable
             case Scr.Combat:
                 if (_inp.WasNumberPressed(1)) EjecutarAtaque();
                 else if (_inp.WasNumberPressed(2)) { _ren.AddMsg("Huyes del combate."); _enemy = null; _ren.ClearEnemy(); IrMain(); }
+                else if (_inp.WasNumberPressed(3)) UsarPocionCombate();
                 break;
 
             case Scr.CombatAnim:
@@ -148,7 +150,8 @@ public sealed class Game : IDisposable
                 break;
 
             case Scr.Inv:
-                if (_inp.WasPressedThisFrame) IrMain();
+                if (_inp.WasUPressedThisFrame && (_pl != null && GameActions.HasUsablePotion(_pl))) { UsarPocion(); MostrarInventario(); }
+                else if (_inp.WasPressedThisFrame) IrMain();
                 break;
 
             case Scr.Save:
@@ -207,6 +210,8 @@ public sealed class Game : IDisposable
 
     private void Curar() { if (_pl == null) return; Actions.Heal(_ren, _pl); }
     private void Comprar(int idx) { if (_pl == null) return; Actions.BuyItem(_ren, _pl, idx); Menus.ShowShop(_ren, _pl.Gold); }
+    private void UsarPocionCombate() { if (_pl == null) return; Actions.UsePotion(_ren, _pl); Menus.ShowCombat(_ren); }
+    private void UsarPocion() { if (_pl == null) return; Actions.UsePotion(_ren, _pl); }
 
     private void MostrarInventario()
     {
@@ -260,4 +265,3 @@ public sealed class Game : IDisposable
 
     public void Dispose() => _ren.Dispose();
 }
-

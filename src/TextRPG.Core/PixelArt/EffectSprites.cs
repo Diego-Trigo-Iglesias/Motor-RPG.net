@@ -8,6 +8,9 @@ public static class EffectSprites
     private static readonly PixelColor HG = new(80, 220, 80);
     private static readonly PixelColor HL = new(160, 255, 160);
     private static readonly PixelColor VY = new(255, 210, 40);
+    private static readonly PixelColor FR = new(255, 60, 20);
+    private static readonly PixelColor FO = new(255, 140, 30);
+    private static readonly PixelColor DC = new(100, 200, 220);
 
     /// Corte 16×8.
     public static PixelSprite Slash => _slash.Value;
@@ -53,6 +56,34 @@ public static class EffectSprites
         "     lll          ",
         "      l           ",
     ], new() { ['g'] = HG, ['l'] = HL }));
+
+    /// Fuego 14×10.
+    public static PixelSprite Fire => _fire.Value;
+    private static readonly Lazy<PixelSprite> _fire = new(() => PixelSprite.FromAscii([
+        "       r          ",
+        "      rrr         ",
+        "     ororo        ",
+        "    rorrro        ",
+        "   rorrrrr        ",
+        "   rrorrro        ",
+        "    rrrrr         ",
+        "    rrrrr         ",
+        "     rrr          ",
+        "      r           ",
+    ], new() { ['r'] = FR, ['o'] = FO }));
+
+    /// Esquiva 12×8.
+    public static PixelSprite Dodge => _dodge.Value;
+    private static readonly Lazy<PixelSprite> _dodge = new(() => PixelSprite.FromAscii([
+        "    cccccc        ",
+        "   cccccccc       ",
+        "  ccc  cccc       ",
+        " ccc    cccc      ",
+        " ccc    cccc      ",
+        "  ccc  cccc       ",
+        "   cccccccc       ",
+        "    cccccc        ",
+    ], new() { ['c'] = DC }));
 
     /// Victoria 14×10.
     public static PixelSprite Victory => _victory.Value;

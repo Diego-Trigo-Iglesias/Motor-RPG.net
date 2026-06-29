@@ -7,4 +7,3 @@ public record CombatRound(
     bool EnemyDodged,
     bool IsCritical
 );
-

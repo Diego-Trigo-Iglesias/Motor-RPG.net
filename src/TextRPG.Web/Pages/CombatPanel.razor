@@ -4,8 +4,11 @@
 {
     <div class="menu-overlay">
         <div class="menu-box">
+            <div class="menu-title">Combate</div>
             <button class="menu-btn fight-btn" @onclick="async () => await OnAttack.InvokeAsync()">[1] Atacar</button>
             <button class="menu-btn" @onclick="async () => await OnFlee.InvokeAsync()">[2] Huir</button>
+            <button class="menu-btn potion-btn" @onclick="async () => await OnUsePotion.InvokeAsync()">[3] Usar poción</button>
+            <div class="help-bar">[1] Atacar · [2] Huir · [3] Usar poción</div>
         </div>
     </div>
 }
@@ -34,6 +37,7 @@ else if (Mode == CombatMode.Defeat)
     [Parameter] public CombatMode Mode { get; set; }
     [Parameter] public EventCallback OnAttack { get; set; }
     [Parameter] public EventCallback OnFlee { get; set; }
+    [Parameter] public EventCallback OnUsePotion { get; set; }
     [Parameter] public EventCallback OnContinue { get; set; }
     [Parameter] public EventCallback OnRestart { get; set; }
 }

@@ -3,7 +3,7 @@ using TextRPG.Core.Models;
 
 namespace TextRPG.Core.Engine;
 
-public sealed class CombatEngine
+public sealed class CombatEngine : ICombatEngine
 {
     private static readonly Random Rng = Random.Shared;
 
@@ -46,4 +46,3 @@ public sealed class CombatEngine
             : new CombatResult(false, enemy.ExpReward / 4, 0, rounds);
     }
 }
-

@@ -4,6 +4,7 @@
 /// Separación de responsabilidades: Menus solo formatea texto, Actions ejecuta, Game coordina.
 /// </summary>
 
+using TextRPG.Core;
 using TextRPG.Core.Constants;
 using TextRPG.Core.Models;
 using TextRPG.Rendering;
@@ -41,6 +42,8 @@ public static class Menus
         if (loc?.HasShop ?? false) opts.Add("[3] Tienda");
         if (loc?.HasHealer ?? false) opts.Add($"[4] Curandero ({GameConstants.HealCost} oro)");
         opts.Add("[5] Inventario y stats");
+        if (p != null && GameActions.HasUsablePotion(p))
+            opts.Add($"[6] Usar poción ({GameActions.PotionCount(p)} en inventario)");
         opts.Add("[S] Guardar partida");
         opts.Add("[L] Cargar partida");
         r.SetMenu(opts.ToArray());
@@ -51,7 +54,7 @@ public static class Menus
         r.ClearMsgs();
         r.AddMsg("Ronda " + (r.CombatRound + 1) + " - Que haces?");
         r.AddMsg("");
-        r.SetMenu(["[1] Atacar", "[2] Huir"]);
+        r.SetMenu(["[1] Atacar", "[2] Huir", "[3] Usar poción"]);
     }
 
     public static void ShowTravel(GameRenderer r, GameState? gs)
@@ -99,7 +102,10 @@ public static class Menus
                 r.AddMsg(" * " + item.ToDetailString());
         }
         r.AddMsg("");
-        r.AddMsg("[ENTER] Volver");
+        if (GameActions.HasUsablePotion(p))
+            r.AddMsg("[U] Usar poción  [ENTER] Volver");
+        else
+            r.AddMsg("[ENTER] Volver");
         r.ClearMenu();
     }
 
@@ -125,4 +131,3 @@ public static class Menus
         r.SetMenu(slots);
     }
 }
-

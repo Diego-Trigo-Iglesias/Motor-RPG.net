@@ -34,11 +34,13 @@
     @if (Renderer.CurrentScreen == WebRenderer.Screen.MainMenu)
     {
         <MainMenuScreen Location="_currentLocation"
+                        Player="_player"
                         OnExplore="DoExplore"
                         OnTravel="ShowTravelMenu"
                         OnShop="ShowShop"
                         OnHeal="DoHeal"
-                        OnInventory="ShowInventory" />
+                        OnInventory="ShowInventory"
+                        OnUsePotion="DoUsePotion" />
     }
 
     @* Travel *@
@@ -62,7 +64,8 @@
     {
         <CombatPanel Mode="CombatPanel.CombatMode.Fighting"
                      OnAttack="DoAttack"
-                     OnFlee="DoFlee" />
+                     OnFlee="DoFlee"
+                     OnUsePotion="DoUsePotion" />
     }
     else if (Renderer.CurrentScreen == WebRenderer.Screen.Victory)
     {
@@ -80,7 +83,8 @@
     {
         <InventoryPanel Inventory="GetPlayerInventory()"
                         EquippedItems="GetEquippedItems()"
-                        OnBack="BackToMain" />
+                        OnBack="BackToMain"
+                        OnUsePotion="DoUsePotion" />
     }
 </div>
 
@@ -226,12 +230,8 @@
                 await DoHeal(); break;
             case "5":
                 ShowInventory(); break;
-            case "S" or "s":
-                // Save handled by Desktop only; web auto-saves
-                break;
-            case "L" or "l":
-                // Load: auto-load on startup
-                break;
+            case "6" when (_player != null && GameActions.HasUsablePotion(_player)):
+                await DoUsePotion(); break;
         }
     }
 
@@ -241,6 +241,7 @@
         {
             case "1": await DoAttack(); break;
             case "2": await DoFlee(); break;
+            case "3": await DoUsePotion(); break;
         }
     }
 
@@ -401,7 +402,6 @@
         var result = GameActions.BuyItem(_player, index);
         if (!result.Success && result.Item == null) return; // índice inválido
         Renderer.MarkupLine(result.Message);
-        Renderer.PlayHealAnimation();
         await AutoSave();
         await PushRenderState();
     }
@@ -412,6 +412,17 @@
         var result = GameActions.Heal(_player);
         Renderer.MarkupLine(result.Message);
         if (result.Success)
+            Renderer.PlayHealAnimation();
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoUsePotion()
+    {
+        if (_player == null) return;
+        var (used, msg, potion) = GameActions.UsePotion(_player);
+        Renderer.MarkupLine(msg);
+        if (used)
             Renderer.PlayHealAnimation();
         await AutoSave();
         await PushRenderState();

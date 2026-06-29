@@ -6,7 +6,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Jugar Demo](https://img.shields.io/badge/Jugar-Demo-ff5722?logo=githubpages)](https://diego-trigo-iglesias.github.io/Motor-RPG.net/)
 
+<<<<<<< HEAD
 **TextRPG** es un juego de rol por turnos con sprites pixel art (48×48) renderizados con Raylib, fondos dinámicos con profundidad 3D por localización, animación de viaje con transición de sprites, y versión web en Blazor WebAssembly.
+=======
+**TextRPG** es un juego de rol por turnos con sprites pixel art (48×48) renderizados con Raylib, fondos dinámicos por localización y versión web en Blazor WebAssembly.
+>>>>>>> 2636d9025ffdefb1669e30be47808bb0ad58285d
 
 ---
 
@@ -22,12 +26,18 @@ Demo en WebAssembly sin instalación.
 
 | Característica | Descripción |
 |---------------|-------------|
+<<<<<<< HEAD
 | **Sprites 32×16** | Pixel art detallado de localizaciones con paletas de 6-7 colores |
 | **Sprites jugador 48×48** | Personajes construidos con shapes programáticas |
 | **Animaciones de ataque** | El personaje se desplaza hacia el enemigo, este retrocede al recibir golpe |
 | **Fondos dinámicos 3D** | Cada localización tiene 3 capas de profundidad: fondo, siluetas y foreground |
 | **6 localizaciones** | Aldea, Bosque, Cueva, Ruinas, Delta, Mazmorra — cada una con atmósfera única |
 | **Animación de viaje** | Transición animada con sprites al cambiar de localización |
+=======
+| **Sprites 48×48** | Personajes construidos con shapes programáticas |
+| **Animaciones de ataque** | El personaje se desplaza hacia el enemigo, este retrocede al recibir golpe |
+| **Fondos dinámicos** | Cada localización tiene su atmósfera: luciérnagas, rayos de luna, cristales, polvo, llamas |
+>>>>>>> 2636d9025ffdefb1669e30be47808bb0ad58285d
 | **Efectos visuales** | Partículas en críticos, texto flotante de daño, screen shake, flash en impactos |
 | **Respiración idle** | El personaje se mueve ligeramente arriba y abajo |
 | **Barras de HP animadas** | Transición suave entre valores actual y nuevo |

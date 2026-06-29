@@ -1,11 +1,16 @@
 @using TextRPG.Web.Rendering
 
 <div class="menu-overlay">
-    <button class="menu-btn start-btn" @onclick="OnStartNewGame">[1] Iniciar Aventura</button>
-    @if (HasSavedGame)
-    {
-        <button class="menu-btn" @onclick="OnContinueGame">[2] Continuar partida</button>
-    }
+    <div class="menu-box" style="text-align:center;">
+        <div class="game-title">TEXTRPG</div>
+        <div class="game-subtitle">RPG de Texto Premium</div>
+        <button class="menu-btn start-btn" @onclick="OnStartNewGame">[1] Iniciar Aventura</button>
+        @if (HasSavedGame)
+        {
+            <button class="menu-btn" @onclick="OnContinueGame">[2] Continuar partida</button>
+        }
+        <div class="help-bar">[ENTER] Seleccionar</div>
+    </div>
 </div>
 
 @code {

@@ -59,7 +59,6 @@ public static class Actions
             gs.TotalVictories++;
             gs.Player.Gold += enemy.GoldReward;
             int prevLvl = gs.Player.Level;
-            gs.Player.GainExperience(enemy.ExpReward);
             r.AddMsg("¡Victoria! +" + enemy.ExpReward + " EXP  +" + enemy.GoldReward + " Oro");
             if (gs.Player.Level > prevLvl)
                 r.AddMsg("¡SUBISTE AL NIVEL " + gs.Player.Level + "!");
@@ -102,6 +101,13 @@ public static class Actions
         r.UpdateState(p, null);
     }
 
+    public static void UsePotion(GameRenderer r, Player p)
+    {
+        var (used, msg, _) = GameActions.UsePotion(p);
+        r.AddMsg(msg);
+        r.UpdateState(p, null);
+    }
+
     public static bool BuyItem(GameRenderer r, Player p, int idx)
     {
         var result = GameActions.BuyItem(p, idx);
@@ -111,4 +117,3 @@ public static class Actions
         return result.Success;
     }
 }
-

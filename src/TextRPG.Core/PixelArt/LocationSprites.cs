@@ -186,7 +186,7 @@ public static class LocationSprites
         "dDDDwwffwwwwwwwwwwffwwwwDDDdd",
         "dDDDwwwwwwwwwwwwwwwwwwwwDDDdd",
         "dDDDwwwwwwwwwwwwwwwwwwwwDDDdd",
-        "dDDDwwwwwwBwwBwwwwwwwwDDDDdd",
+        "dDDDwwwwwwwwBwwBwwwwwwwwDDDDdd",
         "ddDDDDDDDDDDDDDDDDDDDDDDDDdd",
         "ddDDDDDDDDDDDDDDDDDDDDDDDDdd",
         " ddDDDwwwwwwwwwwwwwwwwDDDdd  ",

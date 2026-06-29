@@ -1,7 +1,9 @@
+using TextRPG.Core;
 using TextRPG.Core.Constants;
 using TextRPG.Core.Enums;
 using TextRPG.Core.Models;
 using TextRPG.Core.Engine;
+using TextRPG.Core.Rendering;
 using TextRPG.Core.PixelArt;
 
 namespace TextRPG.Web.Rendering;
@@ -9,6 +11,7 @@ namespace TextRPG.Web.Rendering;
 /// 
 /// WebRenderer para Blazor WASM.
 /// Captura el estado de renderizado para que el componente Blazor lo muestre.
+/// Los métodos de entrada son asíncronos y se resuelven mediante la UI.
 /// 
 public sealed class WebRenderer
 {
@@ -74,7 +77,7 @@ public sealed class WebRenderer
     {
         CurrentScreen = Screen.Title;
         Title = "TextRPG";
-        Messages.Add("Un RPG pixel art en tu navegador.");
+        Messages.Add("RPG de Texto Premium");
         Messages.Add("Creado con .NET 8 + Blazor WASM.");
     }
 
@@ -262,6 +265,14 @@ public sealed class WebRenderer
 
     public void SetScreen(Screen screen) => CurrentScreen = screen;
 
+    public bool HasMenu => _menuOptions != null;
+    public string? MenuTitleText => _menuTitle;
+    public Dictionary<string, string>? MenuOptions => _menuOptions;
+    public bool HasInput => _inputTcs != null;
+    public string? InputPrompt => _inputPrompt;
+    public string? InputDefault => _inputDefault;
+    public bool HasConfirm => _confirmTcs != null;
+    public string? ConfirmQuestion => _confirmQuestion;
     public bool IsWaitingForInput => _menuTcs != null || _inputTcs != null || _confirmTcs != null;
 
     public object GetRenderState(Player? player, Enemy? enemy, GameState? gameState)
@@ -282,14 +293,14 @@ public sealed class WebRenderer
 
         var menu = CurrentScreen switch
         {
-            Screen.MainMenu => GetMainMenu(gameState?.CurrentLocation),
-            Screen.Combat => new[] { "[1] Atacar", "[2] Huir" },
+            Screen.MainMenu => GetMainMenu(gameState?.CurrentLocation, player),
+            Screen.Combat => new[] { "[1] Atacar", "[2] Huir", "[3] Usar poción" },
             Screen.Victory => new[] { "[Enter] Continuar" },
             Screen.Defeat => new[] { "[Enter] Volver al inicio" },
             Screen.Title => new[] { "[Enter] Iniciar Aventura" },
-            Screen.CreateCharacter => new[] { "[1] Guerrero", "[2] Mago", "[3] Picaro" },
+            Screen.CreateCharacter => new[] { "[1] Guerrero", "[2] Mago", "[3] Pícaro" },
             Screen.Travel => GetTravelMenu(gameState),
-            Screen.Shop => GetShopMenu(),
+            Screen.Shop => GetShopMenu(player),
             Screen.Inventory => new[] { "[Enter] Volver" },
             _ => Array.Empty<string>()
         };
@@ -321,7 +332,7 @@ public sealed class WebRenderer
         };
     }
 
-    private string[] GetMainMenu(Location? loc)
+    private string[] GetMainMenu(Location? loc, Player? player)
     {
         var items = new List<string>();
         if (loc?.HasEnemies ?? false) items.Add("[1] Explorar");
@@ -329,6 +340,8 @@ public sealed class WebRenderer
         if (loc?.HasShop ?? false) items.Add("[3] Tienda");
         if (loc?.HasHealer ?? false) items.Add($"[4] Curandero ({GameConstants.HealCost} oro)");
         items.Add("[5] Inventario");
+        if (player != null && GameActions.HasUsablePotion(player))
+            items.Add($"[6] Usar poción ({GameActions.PotionCount(player)} en inventario)");
         return items.ToArray();
     }
 
@@ -343,10 +356,8 @@ public sealed class WebRenderer
         return items.ToArray();
     }
 
-    private string[] GetShopMenu() => ShopCatalog.MenuOptions();
+    private string[] GetShopMenu(Player? player) => ShopCatalog.MenuOptions();
 }
-
-// DTOs para el Canvas
 
 
 

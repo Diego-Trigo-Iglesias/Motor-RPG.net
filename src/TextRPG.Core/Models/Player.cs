@@ -98,7 +98,6 @@ public class Player
         }
         Inventory.Add(item);
     }
-
     public static Player Create(string name, CharacterClass characterClass)
     {
         var (hp, atk, def) = characterClass switch
@@ -108,7 +107,6 @@ public class Player
             CharacterClass.Rogue   => GameConstants.RogueStats,
             _                      => GameConstants.DefaultStats
         };
-
         return new Player
         {
             Name    = name,

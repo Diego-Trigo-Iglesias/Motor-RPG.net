@@ -1,13 +1,15 @@
 @using TextRPG.Core.Enums
 
 <div class="menu-overlay">
-    <div class="menu-box">
+    <div class="menu-box character-box">
         <div class="menu-title">Crea tu personaje</div>
-        <input class="game-input" @bind="HeroName" @bind:event="oninput" placeholder="Nombre del héroe" />
+        <div class="input-label">Nombre del héroe</div>
+        <input class="game-input" @bind="HeroName" @bind:event="oninput" placeholder="Escribe un nombre..." />
+        <div class="input-label">Selecciona una clase:</div>
         <div class="class-list">
-            <button class="menu-btn class-btn warrior-btn" @onclick="() => HandleClassSelect(CharacterClass.Warrior)">[1] Guerrero - Tanque y resistencia</button>
-            <button class="menu-btn class-btn mage-btn" @onclick="() => HandleClassSelect(CharacterClass.Mage)">[2] Mago - Alto daño, frágil</button>
-            <button class="menu-btn class-btn rogue-btn" @onclick="() => HandleClassSelect(CharacterClass.Rogue)">[3] Pícaro - Equilibrado, evasión</button>
+            <button class="menu-btn class-btn warrior-btn" @onclick="() => HandleClassSelect(CharacterClass.Warrior)">[1] Guerrero — Tanque y resistencia</button>
+            <button class="menu-btn class-btn mage-btn" @onclick="() => HandleClassSelect(CharacterClass.Mage)">[2] Mago — Alto daño, frágil</button>
+            <button class="menu-btn class-btn rogue-btn" @onclick="() => HandleClassSelect(CharacterClass.Rogue)">[3] Pícaro — Equilibrado, evasión</button>
         </div>
     </div>
 </div>
