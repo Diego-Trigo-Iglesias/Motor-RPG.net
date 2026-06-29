@@ -9,7 +9,8 @@ public record Location(
     string IconKey,
     bool HasShop = false,
     bool HasHealer = false,
-    bool HasEnemies = true
+    bool HasEnemies = true,
+    bool IsDungeon = false
 );
 
 public static class World
@@ -21,7 +22,7 @@ public static class World
         new("cave",    "Cueva de los Ecos",    "Estalactitas gotean agua helada. Tus pasos resuenan en la oscuridad.",                         IconPalette.Cave,    HasEnemies: true),
         new("ruins",   "Ruinas del Antiguo Reino", "Columnas caídas y estatuas rotas testimonian una civilización perdida.",                   IconPalette.Ruins,   HasEnemies: true),
         new("delta",   "Delta del Ocaso",       "Ciénagas brumosas donde los árboles retorcidos se reflejan en aguas oscuras. Las luces danzantes extravían a los viajeros.", IconPalette.Ruins, HasEnemies: true),
-        new("dungeon", "Mazmorra Profunda",    "El corazon de la oscuridad. Solo los mas fuertes sobreviven aqui.",                             IconPalette.Dungeon, HasEnemies: true),
+        new("dungeon", "Mazmorra Profunda",    "El corazón de la oscuridad. Solo los más fuertes sobreviven aquí.",                             IconPalette.Dungeon, HasEnemies: true, IsDungeon: true),
     ];
 
     public static Location Get(string id) =>

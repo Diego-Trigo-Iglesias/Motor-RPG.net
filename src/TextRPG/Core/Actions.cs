@@ -35,31 +35,113 @@ public static class Actions
         r.UpdateState(gs.Player, enemy);
         r.AddMsg("Te adentras en la oscuridad...");
         r.AddMsg("Un " + enemy.Name + " aparece ante ti!");
-        Menus.ShowCombat(r);
+        Menus.ShowCombat(r, enemy);
     }
 
-    public static bool ExecuteAttack(GameRenderer r, GameState gs, ref Enemy? enemy, CombatEngine combat)
+    /// <summary>Inicia combate de MAZMORRA. El enemigo viene dado por el piso actual.</summary>
+    public static void StartDungeonCombat(GameRenderer r, GameState gs, ref Enemy? enemy, CombatEngine combat)
+    {
+        enemy = GameActions.CreateDungeonEnemy(gs);
+        gs.TotalBattles++;
+        r.CombatRound = 0;
+        r.UpdateState(gs.Player, enemy);
+        r.AddMsg("PISO " + gs.DungeonFloor + " — " + GameActions.GetDungeonFloorName(gs.DungeonFloor));
+        r.AddMsg("Un " + enemy.Name + " bloquea tu camino!");
+        if (enemy.Behavior != EnemyBehavior.Normal)
+            r.AddMsg("⚠ " + GetBehaviorDescription(enemy.Behavior) + " ⚠");
+        Menus.ShowCombat(r, enemy);
+    }
+
+    /// <summary>Ejecuta una acción de combate (ataque normal, fuerte, defensa, poción).</summary>
+    public static bool ExecuteAction(GameRenderer r, GameState gs, ref Enemy? enemy, CombatEngine combat, PlayerAction action)
     {
         if (gs.Player == null || enemy == null) return false;
 
-        var round = combat.SimulateRound(gs.Player, enemy);
+        if (action == PlayerAction.UsePotion)
+        {
+            var (used, msg, _) = GameActions.UsePotion(gs.Player);
+            r.AddMsg(msg);
+            r.UpdateState(gs.Player, null);
+            Menus.ShowCombat(r, enemy);
+            return false; // No termina el combate
+        }
+
+        if (action == PlayerAction.Flee)
+        {
+            r.AddMsg("Huyes del combate!");
+            enemy = null;
+            r.ClearEnemy();
+            r.ClearStatusEffects(gs);
+            return false;
+        }
+
+        var round = combat.SimulateRound(gs.Player, enemy, action);
         combat.ApplyRound(gs.Player, enemy, round);
+        r.CombatRound++;
         r.PlayAtk(round);
         r.UpdateState(gs.Player, enemy);
 
+        //  Mensajes de la ronda 
+        string actionName = action switch
+        {
+            PlayerAction.HeavyAttack => "Ataque Fuerte",
+            PlayerAction.Defend => "Defensa",
+            _ => "Ataque"
+        };
+
+        // Mensaje de comportamiento del enemigo
+        if (!string.IsNullOrEmpty(round.BehaviorMessage))
+            r.AddMsg(round.BehaviorMessage);
+
+        // Daño de veneno
+        if (round.PoisonDamage > 0)
+            r.AddMsg($"El veneno te hace {round.PoisonDamage} de daño. ({gs.Player.PoisonTurnsRemaining} turnos restantes)");
+
+        // Resultado del ataque del jugador
         if (round.EnemyDodged)
-            r.AddMsg(enemy.Name + " esquiva tu ataque!");
+            r.AddMsg(enemy.Name + " esquiva tu " + actionName + "!");
+        else if (round.ShieldActive)
+            r.AddMsg(actionName + " golpea el escudo! Daño reducido: " + round.PlayerDamage);
         else if (round.IsCritical)
             r.AddMsg("¡GOLPE CRÍTICO! Infliges " + round.PlayerDamage + " de daño.");
         else
-            r.AddMsg("Atacas a " + enemy.Name + " por " + round.PlayerDamage + " de daño.");
+            r.AddMsg(actionName + " causa " + round.PlayerDamage + " de daño a " + enemy.Name + ".");
 
+        // Contraataque del enemigo (si sigue vivo)
+        if (enemy.IsAlive && !round.PlayerDodged && round.EnemyDamage > 0)
+        {
+            string hitDesc = round.PlayerDefended ? " (mitigado por defensa)" : "";
+            r.AddMsg(enemy.Name + " te golpea por " + round.EnemyDamage + hitDesc + ".");
+        }
+        else if (enemy.IsAlive && round.PlayerDodged)
+        {
+            r.AddMsg("Esquivas el ataque de " + enemy.Name + "!");
+        }
+
+        // Efecto de enemigo enfurecido
+        if (round.EnemyIsEnraged)
+            r.AddMsg("¡" + enemy.Name + " está ENFURECIDO! Su poder aumenta!");
+
+        //  Verificar resultados 
         if (!enemy.IsAlive)
         {
             gs.TotalVictories++;
-            gs.Player.Gold += enemy.GoldReward;
+            int gold = enemy.GoldReward;
+            int exp = enemy.ExpReward;
+            gs.Player.Gold += gold;
+            gs.Player.GainExperience(exp);
             int prevLvl = gs.Player.Level;
-            r.AddMsg("¡Victoria! +" + enemy.ExpReward + " EXP  +" + enemy.GoldReward + " Oro");
+
+            r.AddMsg("");
+            r.AddMsg("╔══ ¡VICTORIA! ══╗");
+            r.AddMsg("+" + exp + " EXP  +" + gold + " Oro");
+
+            // Bonus por estar en mazmorra
+            if (gs.IsInDungeon && gs.DungeonFloor == GameConstants.DungeonFloorCount)
+            {
+                r.AddMsg("╔══ ¡DERROTASTE AL DRAGÓN ANCESTRAL! ══╗");
+            }
+
             if (gs.Player.Level > prevLvl)
                 r.AddMsg("¡SUBISTE AL NIVEL " + gs.Player.Level + "!");
             r.PlayVictory();
@@ -75,11 +157,8 @@ public static class Actions
             return false;
         }
 
-        if (!round.PlayerDodged)
-            r.AddMsg(enemy.Name + " te golpea por " + round.EnemyDamage + " de daño.");
-        else
-            r.AddMsg("Esquivas el ataque de " + enemy.Name + "!");
         r.ClearMenu();
+        Menus.ShowCombat(r, enemy);
         return false;
     }
 
@@ -90,7 +169,10 @@ public static class Actions
         r.SetLocation(gs.CurrentLocationId, loc.Name, loc.Description);
         r.AddMsg(msg);
         r.UpdateState(gs.Player, null);
-        Menus.ShowMain(r, gs.Player, loc);
+        if (loc.IsDungeon)
+            Menus.ShowDungeonEntrance(r, gs);
+        else
+            Menus.ShowMain(r, gs.Player, loc);
     }
 
     public static void Heal(GameRenderer r, Player p)
@@ -116,4 +198,72 @@ public static class Actions
         r.UpdateState(p, null);
         return result.Success;
     }
+
+    // ══════════════════════════════════════════════════
+    //   ACCIONES DE MAZMORRA
+    // ══════════════════════════════════════════════════
+
+    public static void EnterDungeon(GameRenderer r, GameState gs)
+    {
+        GameActions.EnterDungeon(gs);
+        r.ClearMsgs();
+        r.AddMsg("╔═══════════════════════════════╗");
+        r.AddMsg("║   TE ADENTRAS EN LA MAZMORRA  ║");
+        r.AddMsg("║   No hay vuelta atrás...       ║");
+        r.AddMsg("╚═══════════════════════════════╝");
+        r.AddMsg("");
+        r.PlayTravel("village", "dungeon");
+        r.UpdateState(gs.Player, null);
+    }
+
+    public static void AdvanceDungeonFloor(GameRenderer r, GameState gs)
+    {
+        bool hasNext = GameActions.AdvanceDungeonFloor(gs);
+        r.ClearMsgs();
+        r.AddMsg("Bajando al PISO " + gs.DungeonFloor + "...");
+        r.AddMsg(GameActions.GetDungeonFloorName(gs.DungeonFloor));
+        r.UpdateState(gs.Player, null);
+    }
+
+    public static void ExitDungeon(GameRenderer r, GameState gs, ref Location loc)
+    {
+        GameActions.ExitDungeon(gs);
+        loc = gs.CurrentLocation;
+        r.SetLocation(gs.CurrentLocationId, loc.Name, loc.Description);
+        r.AddMsg("Escapas de la mazmorra, derrotado...");
+        r.UpdateState(gs.Player, null);
+    }
+
+    /// <summary>Maneja la victoria sobre el jefe final.</summary>
+    public static void WinGame(GameRenderer r, GameState gs)
+    {
+        GameActions.SetVictory(gs);
+        r.ClearMsgs();
+        r.AddMsg("╔══════════════════════════════════════╗");
+        r.AddMsg("║   HAS VENCIDO AL DRAGÓN ANCESTRAL!   ║");
+        r.AddMsg("║   LA MAZMORRA HA SIDO PURIFICADA.    ║");
+        r.AddMsg("╚══════════════════════════════════════╝");
+        r.AddMsg("");
+        r.AddMsg("Estadísticas finales:");
+        r.AddMsg("  Nivel alcanzado: " + gs.Player.Level);
+        r.AddMsg("  Batallas libradas: " + gs.TotalBattles);
+        r.AddMsg("  Victorias: " + gs.TotalVictories);
+        r.AddMsg("  Clase: " + gs.Player.Class);
+        r.AddMsg("");
+        r.AddMsg("¡Gracias por jugar TextRPG!");
+        r.ClearMenu();
+    }
+
+    // ══════════════════════════════════════════════════
+    //   HELPERS
+    // ══════════════════════════════════════════════════
+
+    private static string GetBehaviorDescription(EnemyBehavior behavior) => behavior switch
+    {
+        EnemyBehavior.Shielded  => "Escudo mágico: reduce el daño los primeros 2 turnos",
+        EnemyBehavior.Venomous  => "Ataque venenoso: aplica veneno que daña por turno",
+        EnemyBehavior.Berserker => "Enfurece al 50% de HP: duplica su ataque",
+        EnemyBehavior.Boss      => "JEFE FINAL: carga energía 2 turnos y desata un ataque masivo",
+        _                       => ""
+    };
 }

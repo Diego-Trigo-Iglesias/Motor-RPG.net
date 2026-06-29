@@ -25,7 +25,6 @@ public static class SpriteLoader
         L("orc", EnemySprites.Orc); L("dragon", EnemySprites.Dragon);
         L("slash", EffectSprites.Slash); L("crit", EffectSprites.CriticalHit);
         L("victory", EffectSprites.Victory);
-        // Location sprites (for main scene display)
         L("loc_village", LocationSprites.Village); L("loc_forest", LocationSprites.Forest);
         L("loc_cave", LocationSprites.Cave); L("loc_ruins", LocationSprites.Ruins);
         L("loc_delta", LocationSprites.Delta); L("loc_dungeon", LocationSprites.Dungeon);

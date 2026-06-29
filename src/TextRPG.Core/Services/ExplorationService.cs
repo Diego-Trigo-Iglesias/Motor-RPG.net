@@ -38,20 +38,40 @@ public sealed class ExplorationService
         while (player.IsAlive && enemy.IsAlive)
         {
             var action = _renderer.SelectMenu(
-                $"Ronda {round} — Que haces?",
+                $"Ronda {round} — Qué haces?",
                 new Dictionary<string, string>
                 {
                     ["fight"] = $"{IconPalette.Fight} Atacar",
+                    ["heavy"] = $"{IconPalette.Attack} Ataque fuerte",
+                    ["defend"] = $"{IconPalette.Dodge} Defender",
+                    ["potion"] = $"{IconPalette.Bullet} Usar poción",
                     ["flee"] = $"{IconPalette.Flee} Huir"
                 });
 
-            if (action == "flee")
+            PlayerAction playerAction = action switch
+            {
+                "fight" => PlayerAction.Attack,
+                "heavy" => PlayerAction.HeavyAttack,
+                "defend" => PlayerAction.Defend,
+                "potion" => PlayerAction.UsePotion,
+                "flee" => PlayerAction.Flee,
+                _ => PlayerAction.Attack
+            };
+
+            if (playerAction == PlayerAction.Flee)
             {
                 _renderer.MarkupLine("[yellow]Huyes del combate![/]\n");
                 return;
             }
 
-            var combatRound = _combat.SimulateRound(player, enemy);
+            if (playerAction == PlayerAction.UsePotion)
+            {
+                var (used, msg, _) = GameActions.UsePotion(player);
+                _renderer.MarkupLine(msg);
+                if (used) continue; // No gasta turno
+            }
+
+            var combatRound = _combat.SimulateRound(player, enemy, playerAction);
             _combat.ApplyRound(player, enemy, combatRound);
             _renderer.PrintCombatRound(player, enemy, combatRound, round++);
         }
@@ -65,5 +85,3 @@ public sealed class ExplorationService
         }
     }
 }
-
-

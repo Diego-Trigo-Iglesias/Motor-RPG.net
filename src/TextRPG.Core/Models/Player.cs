@@ -3,6 +3,7 @@ using TextRPG.Core.Enums;
 
 namespace TextRPG.Core.Models;
 
+/// <summary>Jugador con stats, inventario, equipamiento y efectos de estado.</summary>
 public class Player
 {
     public string Name { get; set; } = string.Empty;
@@ -20,12 +21,21 @@ public class Player
     public List<Item> Inventory { get; set; } = [];
     public List<string> CompletedQuests { get; set; } = [];
 
-    // Equipamiento
+    //  Equipamiento 
     public Item? EquippedWeapon { get; set; }
     public Item? EquippedArmor { get; set; }
     public Item? EquippedAmulet { get; set; }
 
-    /// <summary>Lista de items equipados (no nulos).</summary>
+    //  Efectos de estado (combate) 
+    /// <summary>Turnos restantes de veneno. 0 = sin veneno.</summary>
+    public int PoisonTurnsRemaining { get; set; }
+
+    /// <summary>Daño por turno del veneno activo.</summary>
+    public int PoisonDamagePerTurn { get; set; }
+
+    /// <summary>True si el jugador usó Defensa este turno (reduce daño recibido). Se resetea cada ronda.</summary>
+    public bool IsDefending { get; set; }
+
     public List<Item> GetEquippedItems()
     {
         var items = new List<Item>(3);
@@ -35,13 +45,9 @@ public class Player
         return items;
     }
 
-    /// <summary>Ataque total incluyendo bono de equipo.</summary>
     public int TotalAttack => Attack + (EquippedWeapon?.AttackBonus ?? 0) + (EquippedAmulet?.AttackBonus ?? 0);
-
-    /// <summary>Defensa total incluyendo bono de equipo.</summary>
     public int TotalDefense => Defense + (EquippedArmor?.DefenseBonus ?? 0);
 
-    /// <summary>Slot que ocupa un item según su tipo.</summary>
     public static EquipmentSlot SlotFor(ItemType type) => type switch
     {
         ItemType.Weapon => EquipmentSlot.Weapon,
@@ -50,13 +56,11 @@ public class Player
         _ => EquipmentSlot.None
     };
 
-    /// <summary>Equipa un item. Si ya hay uno equipado en ese slot, lo devuelve al inventario.</summary>
     public void Equip(Item item)
     {
         var slot = SlotFor(item.Type);
-        if (slot == EquipmentSlot.None) return; // No equipable
+        if (slot == EquipmentSlot.None) return;
 
-        // Devolver item previo al inventario
         Item? prev = slot switch
         {
             EquipmentSlot.Weapon => EquippedWeapon,
@@ -66,19 +70,15 @@ public class Player
         };
         if (prev != null) Inventory.Add(prev);
 
-        // Asignar nuevo item
         switch (slot)
         {
             case EquipmentSlot.Weapon: EquippedWeapon = item; break;
             case EquipmentSlot.Armor: EquippedArmor = item; break;
             case EquipmentSlot.Amulet: EquippedAmulet = item; break;
         }
-
-        // Quitar del inventario si estaba allí
         Inventory.Remove(item);
     }
 
-    /// <summary>Desequipa un slot. El item vuelve al inventario.</summary>
     public void Unequip(EquipmentSlot slot)
     {
         Item? item = slot switch
@@ -98,6 +98,26 @@ public class Player
         }
         Inventory.Add(item);
     }
+
+    /// <summary>Limpia efectos de estado al terminar el combate.</summary>
+    public void ClearStatusEffects()
+    {
+        PoisonTurnsRemaining = 0;
+        PoisonDamagePerTurn = 0;
+        IsDefending = false;
+    }
+
+    /// <summary>Aplica daño de veneno acumulado. Devuelve el daño infligido.</summary>
+    public int ApplyPoisonDamage()
+    {
+        if (PoisonTurnsRemaining <= 0) return 0;
+
+        int dmg = PoisonDamagePerTurn;
+        CurrentHp = Math.Max(0, CurrentHp - dmg);
+        PoisonTurnsRemaining--;
+        return dmg;
+    }
+
     public static Player Create(string name, CharacterClass characterClass)
     {
         var (hp, atk, def) = characterClass switch
@@ -134,7 +154,7 @@ public class Player
     {
         Level++;
         MaxHp    += GameConstants.HpPerLevel;
-        CurrentHp = MaxHp;
+        CurrentHp = MaxHp; // Curar al subir de nivel
         Attack   += GameConstants.AtkPerLevel;
         Defense  += GameConstants.DefPerLevel;
     }

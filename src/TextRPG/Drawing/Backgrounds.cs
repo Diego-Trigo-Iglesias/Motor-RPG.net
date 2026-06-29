@@ -32,10 +32,10 @@ public static class Backgrounds
             case "dungeon": Dungeon(sw, sh); break;
             default:        DefaultBg(sw, sh); break;
         }
-        // ─── Capa de profundidad media (siluetas existentes) ───
+        //  Capa de profundidad media (siluetas existentes) 
         // (dibujado dentro de cada función)
 
-        // ─── Primer plano (foreground) ───
+        //  Primer plano (foreground) 
         // Vegetación / suelo en primer plano para efecto 3D de profundidad
         DrawForeground(sw, sh, locId);
 

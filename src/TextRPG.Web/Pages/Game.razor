@@ -63,9 +63,13 @@
     @if (Renderer.CurrentScreen == WebRenderer.Screen.Combat)
     {
         <CombatPanel Mode="CombatPanel.CombatMode.Fighting"
-                     OnAttack="DoAttack"
-                     OnFlee="DoFlee"
-                     OnUsePotion="DoUsePotion" />
+                     Player="_player"
+                     Enemy="_currentEnemy"
+                     OnAttack="() => DoCombatAction(PlayerAction.Attack)"
+                     OnHeavyAttack="() => DoCombatAction(PlayerAction.HeavyAttack)"
+                     OnDefend="() => DoCombatAction(PlayerAction.Defend)"
+                     OnUsePotion="() => DoCombatAction(PlayerAction.UsePotion)"
+                     OnFlee="() => DoCombatAction(PlayerAction.Flee)" />
     }
     else if (Renderer.CurrentScreen == WebRenderer.Screen.Victory)
     {
@@ -85,6 +89,69 @@
                         EquippedItems="GetEquippedItems()"
                         OnBack="BackToMain"
                         OnUsePotion="DoUsePotion" />
+    }
+
+    @* Dungeon Entrance *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.DungeonEntrance)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box danger-box">
+                <div class="menu-title danger-text">⚠ MAZMORRA PROFUNDA ⚠</div>
+                <div class="dungeon-desc">
+                    <p>@GameConstants.DungeonFloorCount pisos de oscuridad y muerte.</p>
+                    <p>Una vez dentro, NO podrás salir hasta vencer o morir.</p>
+                </div>
+                <button class="menu-btn danger-btn" @onclick="DoEnterDungeon">[1] Entrar a la mazmorra</button>
+                <button class="menu-btn" @onclick="BackToMain">[2] Volver a prepararme</button>
+                <div class="help-bar">[1] Entrar · [2] Volver</div>
+            </div>
+        </div>
+    }
+
+    @* Dungeon Floor Transition *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.DungeonFloor)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box">
+                <div class="menu-title">PISO @(_state?.DungeonFloor ?? 1)</div>
+                <div class="dungeon-stats">
+                    <span>HP: @(_player?.CurrentHp ?? 0)/@(_player?.MaxHp ?? 0)</span>
+                    <span>Pociones: @(_player != null ? GameActions.PotionCount(_player) : 0)</span>
+                </div>
+                @if (_state != null && _state.DungeonFloor >= GameConstants.DungeonFloorCount)
+                {
+                    <div class="boss-warning">⭐ EL DRAGÓN ANCESTRAL TE ESPERA ⭐</div>
+                    <button class="menu-btn boss-btn" @onclick="DoEnterNextFloor">[1] Enfrentar al Dragón</button>
+                }
+                else
+                {
+                    <button class="menu-btn" @onclick="DoEnterNextFloor">[1] Continuar al siguiente piso</button>
+                    @if (_player != null && GameActions.HasUsablePotion(_player))
+                    {
+                        <button class="menu-btn potion-btn" @onclick="DoUsePotionDungeon">[2] Usar poción (@GameActions.PotionCount(_player) disp.)</button>
+                    }
+                }
+                <button class="menu-btn flee-btn" @onclick="DoFleeDungeon">[5] Huir de la mazmorra (pierdes progreso)</button>
+                <div class="help-bar">[1] Continuar · [2] Usar poción · [5] Huir</div>
+            </div>
+        </div>
+    }
+
+    @* Victory overlay (full game completion) *@
+    @if (Renderer.CurrentScreen == WebRenderer.Screen.Title && _state?.HasWon == true)
+    {
+        <div class="menu-overlay">
+            <div class="menu-box victory-final-box">
+                <div class="menu-title victory-text">¡HAS GANADO EL JUEGO!</div>
+                <div class="victory-stats">
+                    <p>@_state.Player.Name ha purificado la Mazmorra Profunda.</p>
+                    <p>Nivel: @_state.Player.Level | Clase: @_state.Player.Class</p>
+                    <p>Batallas: @_state.TotalBattles | Victorias: @_state.TotalVictories</p>
+                    <p>Oro acumulado: @_state.Player.Gold</p>
+                </div>
+                <button class="menu-btn" @onclick="DoRestartGame">[Enter] Volver al inicio</button>
+            </div>
+        </div>
     }
 </div>
 
@@ -158,15 +225,12 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync("TextRPG.Renderer.init", "gameCanvas", 2);
-            // Check if there's a saved game (for Continue button)
             _hasSavedGame = await JS.InvokeAsync<bool>("TextRPG.Renderer.hasSave");
-            // Try to auto-load saved game
             var loaded = await TryAutoLoad();
             if (!loaded)
             {
                 Renderer.PrintTitle();
             }
-            // Auto-focus the game container for keyboard input
             await JS.InvokeVoidAsync("TextRPG.Renderer.focusGame");
         }
         await PushRenderState();
@@ -195,6 +259,14 @@
                 await HandleCreateCharKey(e.Key);
                 break;
             case WebRenderer.Screen.Inventory:
+                await HandleInventoryKey(e.Key);
+                break;
+            case WebRenderer.Screen.DungeonEntrance:
+                await HandleDungeonEntranceKey(e.Key);
+                break;
+            case WebRenderer.Screen.DungeonFloor:
+                await HandleDungeonFloorKey(e.Key);
+                break;
             case WebRenderer.Screen.Victory:
             case WebRenderer.Screen.Defeat:
                 if (e.Key is "Enter" or " ") BackToMain();
@@ -239,9 +311,11 @@
     {
         switch (key)
         {
-            case "1": await DoAttack(); break;
-            case "2": await DoFlee(); break;
-            case "3": await DoUsePotion(); break;
+            case "1": await DoCombatAction(PlayerAction.Attack); break;
+            case "2": await DoCombatAction(PlayerAction.HeavyAttack); break;
+            case "3": await DoCombatAction(PlayerAction.Defend); break;
+            case "4": await DoCombatAction(PlayerAction.UsePotion); break;
+            case "5": await DoCombatAction(PlayerAction.Flee); break;
         }
     }
 
@@ -274,6 +348,34 @@
             case "1": await DoCreateCharacter(CharacterClass.Warrior); break;
             case "2": await DoCreateCharacter(CharacterClass.Mage); break;
             case "3": await DoCreateCharacter(CharacterClass.Rogue); break;
+        }
+    }
+
+    private async Task HandleInventoryKey(string key)
+    {
+        if (key is "U" or "u")
+            await DoUsePotion();
+        else if (key is "Enter" or " ")
+            BackToMain();
+    }
+
+    private async Task HandleDungeonEntranceKey(string key)
+    {
+        switch (key)
+        {
+            case "1": await DoEnterDungeon(); break;
+            case "2": BackToMain(); break;
+        }
+    }
+
+    private async Task HandleDungeonFloorKey(string key)
+    {
+        switch (key)
+        {
+            case "1": await DoEnterNextFloor(); break;
+            case "2" when (_player != null && GameActions.HasUsablePotion(_player)):
+                await DoUsePotionDungeon(); break;
+            case "5": await DoFleeDungeon(); break;
         }
     }
 
@@ -320,13 +422,46 @@
         _currentEnemy = Enemy.Random(_state!.Player.Level);
         _state.TotalBattles++;
         Renderer.PrintCombatHeader(_state.Player, _currentEnemy);
+        Renderer.DungeonFloor = 0;
         await PushRenderState();
     }
 
-    private async Task DoAttack()
+    private async Task DoCombatAction(PlayerAction action)
     {
         if (_state == null || _currentEnemy == null) return;
-        var round = _combat.SimulateRound(_state.Player, _currentEnemy);
+
+        if (action == PlayerAction.Flee)
+        {
+            Renderer.MarkupLine("Huyes del combate!");
+            _currentEnemy = null;
+            _state.Player.ClearStatusEffects();
+            if (_state.IsInDungeon)
+            {
+                _state.ResetDungeon();
+                _state.CurrentLocationId = "village";
+                _currentLocation = _state.CurrentLocation;
+            }
+            Renderer.Clear();
+            Renderer.PrintStatus(_state.Player);
+            Renderer.PrintLocation(_state.CurrentLocation);
+            Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+            await AutoSave();
+            await PushRenderState();
+            return;
+        }
+
+        if (action == PlayerAction.UsePotion)
+        {
+            var (used, msg, _) = GameActions.UsePotion(_state.Player);
+            Renderer.MarkupLine(msg);
+            if (used)
+                Renderer.PlayHealAnimation();
+            await PushRenderState();
+            return; // No gasta turno
+        }
+
+        // Ejecutar la ronda
+        var round = _combat.SimulateRound(_state.Player, _currentEnemy, action);
         _combat.ApplyRound(_state.Player, _currentEnemy, round);
         Renderer.PrintCombatRound(_state.Player, _currentEnemy, round, Renderer.LastRoundNum + 1);
 
@@ -340,23 +475,34 @@
             Renderer.PrintVictory(enemy, enemy.ExpReward, enemy.GoldReward);
             if (_state.Player.Level > prevLevel)
                 Renderer.PrintLevelUp(_state.Player);
+
+            // Verificar si es jefe de mazmorra
+            if (_state.IsInDungeon && _state.DungeonFloor >= GameConstants.DungeonFloorCount)
+            {
+                // VICTORIA FINAL
+                GameActions.SetVictory(_state);
+                _currentEnemy = null;
+                Renderer.MarkupLine("╔══ ¡HAS GANADO EL JUEGO! ══╗");
+                Renderer.SetScreen(WebRenderer.Screen.Title);
+                await AutoSave();
+                await PushRenderState();
+                return;
+            }
         }
         else if (!_state.Player.IsAlive)
         {
             Renderer.PrintDefeat();
+            if (_state.IsInDungeon)
+            {
+                _state.ResetDungeon();
+                _state.CurrentLocationId = "village";
+                _currentLocation = _state.CurrentLocation;
+            }
+            await AutoSave();
+            await PushRenderState();
+            return;
         }
-        await AutoSave();
-        await PushRenderState();
-    }
 
-    private async Task DoFlee()
-    {
-        Renderer.MarkupLine("Huyes del combate!");
-        _currentEnemy = null;
-        Renderer.Clear();
-        Renderer.PrintStatus(_state!.Player);
-        Renderer.PrintLocation(_state.CurrentLocation);
-        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
         await AutoSave();
         await PushRenderState();
     }
@@ -364,13 +510,26 @@
     private async Task DoContinueAfterBattle()
     {
         _currentEnemy = null;
-        Renderer.Clear();
-        Renderer.PrintStatus(_state!.Player);
-        Renderer.PrintLocation(_state.CurrentLocation);
-        Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        if (_state != null && _state.IsInDungeon)
+        {
+            // Mostrar transición de piso
+            Renderer.DungeonFloor = _state.DungeonFloor;
+            Renderer.SetScreen(WebRenderer.Screen.DungeonFloor);
+        }
+        else
+        {
+            Renderer.Clear();
+            Renderer.PrintStatus(_state!.Player);
+            Renderer.PrintLocation(_state.CurrentLocation);
+            Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        }
         await AutoSave();
         await PushRenderState();
     }
+
+    // ══════════════════════════════════════════════════
+    //   VIAJES
+    // ══════════════════════════════════════════════════
 
     private void ShowTravelMenu()
     {
@@ -386,10 +545,93 @@
         Renderer.PrintStatus(_state.Player);
         Renderer.PrintLocation(_state.CurrentLocation);
         Renderer.MarkupLine(msg);
+
+        if (_currentLocation.IsDungeon)
+        {
+            Renderer.SetScreen(WebRenderer.Screen.DungeonEntrance);
+        }
+        else
+        {
+            Renderer.SetScreen(WebRenderer.Screen.MainMenu);
+        }
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    // ══════════════════════════════════════════════════
+    //   MAZMORRA
+    // ══════════════════════════════════════════════════
+
+    private async Task DoEnterDungeon()
+    {
+        if (_state == null) return;
+        GameActions.EnterDungeon(_state);
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.MarkupLine("╔════════════════════════╗");
+        Renderer.MarkupLine("║ TE ADENTRAS EN LA     ║");
+        Renderer.MarkupLine("║ MAZMORRA PROFUNDA...   ║");
+        Renderer.MarkupLine("║ No hay vuelta atrás    ║");
+        Renderer.MarkupLine("╚════════════════════════╝");
+        Renderer.PrintStatus(_state.Player);
+        // Ir al primer combate
+        _currentEnemy = GameActions.CreateDungeonEnemy(_state);
+        _state.TotalBattles++;
+        Renderer.DungeonFloor = _state.DungeonFloor;
+        Renderer.PrintCombatHeader(_state.Player, _currentEnemy);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoEnterNextFloor()
+    {
+        if (_state == null) return;
+        bool hasNext = GameActions.AdvanceDungeonFloor(_state);
+        Renderer.DungeonFloor = _state.DungeonFloor;
+        Renderer.Clear();
+        Renderer.MarkupLine($"Bajando al PISO {_state.DungeonFloor}...");
+        Renderer.MarkupLine(GameActions.GetDungeonFloorName(_state.DungeonFloor));
+        Renderer.PrintStatus(_state.Player);
+
+        // Crear enemigo del siguiente piso
+        _currentEnemy = GameActions.CreateDungeonEnemy(_state);
+        _state.TotalBattles++;
+        Renderer.PrintCombatHeader(_state.Player, _currentEnemy);
+        await AutoSave();
+        await PushRenderState();
+    }
+
+    private async Task DoUsePotionDungeon()
+    {
+        if (_player == null) return;
+        var (used, msg, _) = GameActions.UsePotion(_player);
+        Renderer.MarkupLine(msg);
+        if (used)
+            Renderer.PlayHealAnimation();
+        Renderer.PrintStatus(_player);
+        Renderer.SetScreen(WebRenderer.Screen.DungeonFloor);
+        await PushRenderState();
+    }
+
+    private async Task DoFleeDungeon()
+    {
+        if (_state == null) return;
+        _state.ResetDungeon();
+        _state.CurrentLocationId = "village";
+        _currentLocation = _state.CurrentLocation;
+        _currentEnemy = null;
+        Renderer.Clear();
+        Renderer.MarkupLine("Escapas de la mazmorra, cubierto de vergüenza...");
+        Renderer.PrintStatus(_state.Player);
+        Renderer.PrintLocation(_state.CurrentLocation);
         Renderer.SetScreen(WebRenderer.Screen.MainMenu);
         await AutoSave();
         await PushRenderState();
     }
+
+    // ══════════════════════════════════════════════════
+    //   TIENDA, CURACIÓN, INVENTARIO
+    // ══════════════════════════════════════════════════
 
     private void ShowShop()
     {
@@ -400,7 +642,7 @@
     {
         if (_player == null) return;
         var result = GameActions.BuyItem(_player, index);
-        if (!result.Success && result.Item == null) return; // índice inválido
+        if (!result.Success && result.Item == null) return;
         Renderer.MarkupLine(result.Message);
         await AutoSave();
         await PushRenderState();
@@ -439,6 +681,13 @@
         Renderer.Clear();
         if (_state != null)
         {
+            if (_state.HasWon)
+            {
+                // Mostrar pantalla de victoria
+                Renderer.MarkupLine("¡HAS GANADO EL JUEGO!");
+                Renderer.SetScreen(WebRenderer.Screen.Title);
+                return;
+            }
             Renderer.PrintStatus(_state.Player);
             Renderer.PrintLocation(_state.CurrentLocation);
         }

@@ -122,7 +122,7 @@
             return;
         }
 
-        // ─── Travel animation overrides everything ─────────────────────────────
+        //  Travel animation overrides everything 
         if (travelState.active) {
             travelState.progress += travelState.progress < 1 ? 0.016 / travelState.duration : 0;
             drawTravelAnimation();
@@ -253,7 +253,7 @@
         }
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────────
+    //  Helpers 
     function bgGrad(top, bot) {
         let g = offCtx.createLinearGradient(0, 0, 0, H);
         g.addColorStop(0, rgb(top[0], top[1], top[2]));
@@ -340,7 +340,7 @@
         }
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────────
+    //  Helpers 
     function drawTitle() {
         let cx = W / 2;
         offCtx.fillStyle = rgb(255, 200, 50);

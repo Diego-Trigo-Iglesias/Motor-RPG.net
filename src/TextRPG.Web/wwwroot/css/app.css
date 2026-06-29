@@ -1,4 +1,235 @@
-/* TextRPG Web — Estilo pixel art pulido */
+/* TextRPG Web — Estilo pixel art pulido — v2 con soporte de mazmorra y behaviors */
+
+/* ─ Mazmorra ─ */
+.danger-box {
+    border-color: #8c2020;
+    background: #1a0e0e;
+}
+
+.danger-text {
+    color: #ff4444;
+    font-size: 16px;
+}
+
+.dungeon-desc {
+    margin-bottom: 12px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.dungeon-desc p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.danger-btn {
+    background: #4a1010;
+    border-color: #8c2020;
+    color: #ff6666;
+    font-weight: bold;
+}
+
+.danger-btn:hover {
+    background: #6a1818;
+}
+
+/* ─ Transición de piso ─ */
+.dungeon-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: var(--bg-panel-inner);
+    border-radius: 5px;
+    font-size: 14px;
+    color: var(--gold);
+}
+
+.boss-warning {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #2a0a0a;
+    border: 1px solid #ff4444;
+    border-radius: 5px;
+    color: #ff6666;
+    font-weight: bold;
+    animation: bossPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes bossPulse {
+    from { box-shadow: 0 0 5px rgba(255, 68, 68, 0.3); }
+    to   { box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
+}
+
+.boss-btn {
+    background: #3a0a0a;
+    border-color: #ff4444;
+    color: #ff8888;
+    font-weight: bold;
+}
+
+.boss-btn:hover {
+    background: #5a1010;
+}
+
+.flee-btn {
+    background: #1a1a2a;
+    border-color: #555;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.flee-btn:hover {
+    background: #2a2a3a;
+}
+
+/* ─ Combate táctico ─ */
+.combat-box {
+    border-color: #4a2a2a;
+}
+
+.combat-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.combat-actions .menu-btn {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-key {
+    display: inline-block;
+    min-width: 24px;
+    color: var(--gold);
+    font-weight: bold;
+}
+
+.action-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.heavy-btn {
+    background: #2a1f0a;
+    border-color: #8c7020;
+}
+
+.heavy-btn:hover {
+    background: #3a2f12;
+}
+
+.defend-btn {
+    background: #0a1f2a;
+    border-color: #20508c;
+}
+
+.defend-btn:hover {
+    background: #122f3a;
+}
+
+/* ─ Behavior badge (en cabecera de combate) ─ */
+.behavior-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.badge-boss {
+    background: #4a0a0a;
+    color: #ff6666;
+    border: 1px solid #ff4444;
+    animation: bossPulse 1s ease-in-out infinite alternate;
+}
+
+.badge-berserker {
+    background: #3a2a0a;
+    color: #ffaa44;
+    border: 1px solid #cc8800;
+}
+
+.badge-venomous {
+    background: #0a2a1a;
+    color: #44cc66;
+    border: 1px solid #229944;
+}
+
+.badge-shielded {
+    background: #0a1a3a;
+    color: #4488cc;
+    border: 1px solid #2266aa;
+}
+
+/* ─ Veneno ─ */
+.poison-warning {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #1a0a0a;
+    border: 1px solid #662222;
+    border-radius: 4px;
+    color: #ff6666;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* ─ Victoria final ─ */
+.victory-final-box {
+    border-color: var(--gold);
+    background: #1a1a0e;
+    text-align: center;
+}
+
+.victory-stats {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.victory-stats p {
+    margin-bottom: 4px;
+}
+
+/* ─ Inventario (mejoras) ─ */
+.poison-status {
+    color: #ff6666;
+    font-weight: bold;
+}
+
+/* ─ Botón de poción dentro de combate ─ */
+.potion-btn {
+    background: #0f1f3a;
+    border-color: #2a5a8c;
+}
+
+.potion-btn:hover {
+    background: #1a2f4a;
+}
+
+/* ─ Responsive para combate ─ */
+@media (max-width: 480px) {
+    .combat-actions .menu-btn {
+        padding: 7px 10px;
+        font-size: 11px;
+    }
+
+    .action-desc {
+        display: none;
+    }
+
+    .dungeon-stats {
+        font-size: 12px;
+    }
+}
 
 :root {
     --bg-body: #1a1a2e;

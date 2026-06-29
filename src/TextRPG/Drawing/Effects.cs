@@ -26,7 +26,7 @@ public sealed class Effects
 
     private const float AtkDur = 0.3f, HitDur = 0.5f;
 
-    // ─── Travel animation state ────────────────────────────────────────────────
+    //  Travel animation state 
     private float _travelT, _travelDur;
     private bool _isTraveling;
     private string _travelFromLoc = "", _travelToLoc = "";
@@ -77,7 +77,7 @@ public sealed class Effects
 
     public (string From, string To) GetTravelLocs() => (_travelFromLoc, _travelToLoc);
 
-    // ─── Attack / Victory ──────────────────────────────────────────────────────
+    //  Attack / Victory 
     public void PlayAttack(CombatRound r)
     {
         _shakeI = r.IsCritical ? 10f : 4f; _shakeT = r.IsCritical ? 0.35f : 0.18f;
@@ -100,7 +100,7 @@ public sealed class Effects
             AddFloat("+", false, 480 + (i - 3) * 35, 150 - Math.Abs(i - 3) * 15);
     }
 
-    // ─── Update ────────────────────────────────────────────────────────────────
+    //  Update 
     public void Update(float dt)
     {
         _shakeT -= dt; if (_shakeT < 0) _shakeT = 0;
@@ -131,7 +131,7 @@ public sealed class Effects
         }
     }
 
-    // ─── Draw ──────────────────────────────────────────────────────────────────
+    //  Draw 
     public void Draw(int sw, int sh)
     {
         if (_flashA > 0)
@@ -153,7 +153,7 @@ public sealed class Effects
         }
     }
 
-    // ─── Draw Travel particles ────────────────────────────────────────────────
+    //  Draw Travel particles 
     /// <summary>Dibuja partículas de transición para la animación de viaje.</summary>
     public void DrawTravel(int sw, int sh)
     {

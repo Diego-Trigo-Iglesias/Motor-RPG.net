@@ -4,7 +4,7 @@ namespace TextRPG.Core.PixelArt;
 /// Cada sprite usa 5-7 colores para profundidad y atmósfera.
 public static class LocationSprites
 {
-    // ─── ALDEA: atardecer, casas con tejados rojos, ventanas iluminadas, árboles ─────
+    //  ALDEA: atardecer, casas con tejados rojos, ventanas iluminadas, árboles 
     private static readonly PixelColor Village_Sky    = new(70, 130, 220);
     private static readonly PixelColor Village_SkyD   = new(50, 100, 190);
     private static readonly PixelColor Village_Roof   = new(190, 75, 40);
@@ -15,7 +15,7 @@ public static class LocationSprites
     private static readonly PixelColor Village_Path   = new(120, 90, 55);
     private static readonly PixelColor Village_Trunk  = new(85, 55, 30);
 
-    // ─── BOSQUE: follaje denso, troncos, claroscuros, hongos ─────────────────────────
+    //  BOSQUE: follaje denso, troncos, claroscuros, hongos 
     private static readonly PixelColor Forest_FoliageL = new(50, 160, 45);
     private static readonly PixelColor Forest_FoliageM = new(35, 125, 35);
     private static readonly PixelColor Forest_FoliageD = new(20, 90, 20);
@@ -26,7 +26,7 @@ public static class LocationSprites
     private static readonly PixelColor Forest_MushC    = new(210, 110, 60);
     private static readonly PixelColor Forest_MushS    = new(230, 200, 160);
 
-    // ─── CUEVA: roca, estalactitas, cristales brillantes, agua ───────────────────────
+    //  CUEVA: roca, estalactitas, cristales brillantes, agua 
     private static readonly PixelColor Cave_StoneL  = new(105, 95, 85);
     private static readonly PixelColor Cave_StoneM  = new(75, 68, 58);
     private static readonly PixelColor Cave_Dark    = new(40, 35, 30);
@@ -36,7 +36,7 @@ public static class LocationSprites
     private static readonly PixelColor Cave_Water   = new(12, 22, 45);
     private static readonly PixelColor Cave_Tip     = new(85, 78, 68);
 
-    // ─── RUINAS: columnas caídas, piedra, atardecer, vegetación ──────────────────────
+    //  RUINAS: columnas caídas, piedra, atardecer, vegetación 
     private static readonly PixelColor Ruins_Stone    = new(115, 105, 90);
     private static readonly PixelColor Ruins_StoneL   = new(155, 145, 125);
     private static readonly PixelColor Ruins_Brick    = new(140, 120, 95);
@@ -46,7 +46,7 @@ public static class LocationSprites
     private static readonly PixelColor Ruins_GrassD   = new(45, 100, 35);
     private static readonly PixelColor Ruins_Debris   = new(90, 80, 70);
 
-    // ─── MAZMORRA: muros oscuros, rejas, fuego, ambiente opresivo ────────────────────
+    //  MAZMORRA: muros oscuros, rejas, fuego, ambiente opresivo 
     private static readonly PixelColor Dungeon_DarkW   = new(35, 28, 42);
     private static readonly PixelColor Dungeon_MidW    = new(50, 42, 58);
     private static readonly PixelColor Dungeon_Stone   = new(68, 60, 75);
@@ -55,7 +55,7 @@ public static class LocationSprites
     private static readonly PixelColor Dungeon_Bar     = new(85, 78, 85);
     private static readonly PixelColor Dungeon_BarL    = new(125, 115, 125);
 
-    // ─── DELTA: pantano, agua oscura, juncos, árboles retorcidos, neblina ────────────
+    //  DELTA: pantano, agua oscura, juncos, árboles retorcidos, neblina 
     private static readonly PixelColor Delta_WaterD  = new(12, 32, 28);
     private static readonly PixelColor Delta_WaterL  = new(22, 52, 40);
     private static readonly PixelColor Delta_Grass   = new(32, 72, 38);
@@ -72,7 +72,7 @@ public static class LocationSprites
     //  SPRITES 32x16
     // ═══════════════════════════════════════════════════════════════════════════════
 
-    // ─── ALDEA ────────────────────────────────────────────────────────────────────
+    //  ALDEA 
     public static PixelSprite Village => _village.Value;
     private static readonly Lazy<PixelSprite> _village = new(() => PixelSprite.FromAscii([
         "                                ",
@@ -98,7 +98,7 @@ public static class LocationSprites
         ['t'] = Village_Trunk
     }));
 
-    // ─── BOSQUE ───────────────────────────────────────────────────────────────────
+    //  BOSQUE 
     public static PixelSprite Forest => _forest.Value;
     private static readonly Lazy<PixelSprite> _forest = new(() => PixelSprite.FromAscii([
         "   fff fff fff fff fff ffff   ",
@@ -124,7 +124,7 @@ public static class LocationSprites
         ['m'] = Forest_MushC, ['M'] = Forest_MushS
     }));
 
-    // ─── CUEVA ────────────────────────────────────────────────────────────────────
+    //  CUEVA 
     public static PixelSprite Cave => _cave.Value;
     private static readonly Lazy<PixelSprite> _cave = new(() => PixelSprite.FromAscii([
         "  SSS  SSS  SSS  SSS  SSSS   ",
@@ -150,7 +150,7 @@ public static class LocationSprites
         ['w'] = Cave_Water
     }));
 
-    // ─── RUINAS ───────────────────────────────────────────────────────────────────
+    //  RUINAS 
     public static PixelSprite Ruins => _ruins.Value;
     private static readonly Lazy<PixelSprite> _ruins = new(() => PixelSprite.FromAscii([
         "       ssssssssssssssssss     ",
@@ -176,7 +176,7 @@ public static class LocationSprites
         ['d'] = Ruins_Debris
     }));
 
-    // ─── MAZMORRA ────────────────────────────────────────────────────────────────
+    //  MAZMORRA 
     public static PixelSprite Dungeon => _dungeon.Value;
     private static readonly Lazy<PixelSprite> _dungeon = new(() => PixelSprite.FromAscii([
         "dddddddddddddddddddddddddddddd",
@@ -201,7 +201,7 @@ public static class LocationSprites
         ['b'] = Dungeon_Bar, ['B'] = Dungeon_BarL
     }));
 
-    // ─── DELTA (pantano) ─────────────────────────────────────────────────────────
+    //  DELTA (pantano) 
     public static PixelSprite Delta => _delta.Value;
     private static readonly Lazy<PixelSprite> _delta = new(() => PixelSprite.FromAscii([
         "   sssssssssssssssssssssssss  ",

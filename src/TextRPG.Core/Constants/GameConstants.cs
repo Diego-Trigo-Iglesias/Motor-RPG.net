@@ -32,10 +32,44 @@ public static class GameConstants
     public const int MaxCombatRounds = 200;
     /// <summary>Probabilidad de golpe crítico (0-100).</summary>
     public const int CritChance = 15;
-    /// <summary>Probabilidad de evasión del jugador (0-100).</summary>
+    /// <summary>Evasión del jugador (0-100).</summary>
     public const int PlayerEvasionChance = 10;
-    /// <summary>Probabilidad de evasión del enemigo (0-100).</summary>
+    /// <summary>Evasión del enemigo (0-100).</summary>
     public const int EnemyEvasionChance = 8;
+
+    // -- Acciones de combate --
+    /// <summary>Multiplicador de daño para Ataque Fuerte.</summary>
+    public const double HeavyAttackMultiplier = 1.5;
+    /// <summary>Multiplicador de daño recibido al Defender.</summary>
+    public const double DefendDamageReduction = 0.5;
+    /// <summary>Multiplicador de daño infligido al Defender.</summary>
+    public const double DefendAttackReduction = 0.5;
+
+    // -- Behaviors de enemigos --
+    /// <summary>Turnos que dura el escudo (Shielded).</summary>
+    public const int ShieldDuration = 2;
+    /// <summary>Reducción de daño con escudo (fracción).</summary>
+    public const double ShieldDamageReduction = 0.5;
+    /// <summary>Daño por turno de veneno.</summary>
+    public const int PoisonDamagePerTurn = 3;
+    /// <summary>Turnos que dura el veneno.</summary>
+    public const int PoisonDuration = 3;
+    /// <summary>Umbral de HP% para enfurecer a Berserker.</summary>
+    public const double BerserkerEnrageThreshold = 0.5;
+    /// <summary>Umbral de HP% para enfurecer al Boss.</summary>
+    public const double BossEnrageThreshold = 0.3;
+    /// <summary>Multiplicador de ataque del Boss durante carga.</summary>
+    public const double BossChargeAttackReduction = 0.5;
+    /// <summary>Multiplicador de ataque del Boss al desatar.</summary>
+    public const double BossUnleashMultiplier = 3.0;
+    /// <summary>Multiplicador de ataque Berserker/Boss enfurecido.</summary>
+    public const double EnrageAttackMultiplier = 1.5;
+
+    // -- Mazmorra --
+    /// <summary>Número de pisos de la Mazmorra Profunda.</summary>
+    public const int DungeonFloorCount = 5;
+    /// <summary>Bonus de escalado por piso adicional (fracción).</summary>
+    public const double DungeonFloorScaleBonus = 0.15;
 
     // -- Pantalla --
     /// <summary>Ancho de ventana (Desktop).</summary>

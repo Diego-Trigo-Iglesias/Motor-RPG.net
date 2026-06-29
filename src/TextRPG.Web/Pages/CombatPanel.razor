@@ -1,14 +1,56 @@
-@* Combat, Victory, and Defeat overlays *@
+@* Combat, Victory, and Defeat overlays — expanded with tactical actions *@
+@using TextRPG.Core.Models
+@using TextRPG.Core.Engine
 
 @if (Mode == CombatMode.Fighting)
 {
     <div class="menu-overlay">
-        <div class="menu-box">
-            <div class="menu-title">Combate</div>
-            <button class="menu-btn fight-btn" @onclick="async () => await OnAttack.InvokeAsync()">[1] Atacar</button>
-            <button class="menu-btn" @onclick="async () => await OnFlee.InvokeAsync()">[2] Huir</button>
-            <button class="menu-btn potion-btn" @onclick="async () => await OnUsePotion.InvokeAsync()">[3] Usar poción</button>
-            <div class="help-bar">[1] Atacar · [2] Huir · [3] Usar poción</div>
+        <div class="menu-box combat-box">
+            <div class="menu-title">
+                ⚔ Combate ⚔
+                @if (Enemy?.Behavior != null && Enemy.Behavior != EnemyBehavior.Normal)
+                {
+                    <span class="behavior-badge @GetBehaviorBadgeClass(Enemy.Behavior)">
+                        @GetBehaviorIcon(Enemy.Behavior) @GetBehaviorName(Enemy.Behavior)
+                    </span>
+                }
+            </div>
+
+            @* Acciones tácticas *@
+            <div class="combat-actions">
+                <button class="menu-btn fight-btn" @onclick="async () => await OnAttack.InvokeAsync()">
+                    <span class="action-key">[1]</span> Atacar
+                    <span class="action-desc">Daño normal</span>
+                </button>
+                <button class="menu-btn heavy-btn" @onclick="async () => await OnHeavyAttack.InvokeAsync()">
+                    <span class="action-key">[2]</span> Ataque fuerte
+                    <span class="action-desc">1.5× daño, recibes contraataque</span>
+                </button>
+                <button class="menu-btn defend-btn" @onclick="async () => await OnDefend.InvokeAsync()">
+                    <span class="action-key">[3]</span> Defender
+                    <span class="action-desc">-50% daño recibido</span>
+                </button>
+                @if (Player != null && Player.Inventory.Any(i => i.HealAmount > 0))
+                {
+                    <button class="menu-btn potion-btn" @onclick="async () => await OnUsePotion.InvokeAsync()">
+                        <span class="action-key">[4]</span> Usar poción
+                        <span class="action-desc">(@Player.Inventory.Count(i => i.HealAmount > 0) disp.)</span>
+                    </button>
+                }
+                <button class="menu-btn flee-btn" @onclick="async () => await OnFlee.InvokeAsync()">
+                    <span class="action-key">[5]</span> Huir
+                </button>
+            </div>
+
+            @* Estado de veneno *@
+            @if (Player != null && Player.PoisonTurnsRemaining > 0)
+            {
+                <div class="poison-warning">
+                    ☠ VENENO: -@Player.PoisonDamagePerTurn HP/turno (@Player.PoisonTurnsRemaining turnos restantes)
+                </div>
+            }
+
+            <div class="help-bar">[1] Atacar · [2] Ataque fuerte · [3] Defender · [4] Poción · [5] Huir</div>
         </div>
     </div>
 }
@@ -35,9 +77,40 @@ else if (Mode == CombatMode.Defeat)
     public enum CombatMode { Fighting, Victory, Defeat }
 
     [Parameter] public CombatMode Mode { get; set; }
+    [Parameter] public Player? Player { get; set; }
+    [Parameter] public Enemy? Enemy { get; set; }
     [Parameter] public EventCallback OnAttack { get; set; }
-    [Parameter] public EventCallback OnFlee { get; set; }
+    [Parameter] public EventCallback OnHeavyAttack { get; set; }
+    [Parameter] public EventCallback OnDefend { get; set; }
     [Parameter] public EventCallback OnUsePotion { get; set; }
+    [Parameter] public EventCallback OnFlee { get; set; }
     [Parameter] public EventCallback OnContinue { get; set; }
     [Parameter] public EventCallback OnRestart { get; set; }
+
+    private static string GetBehaviorIcon(EnemyBehavior b) => b switch
+    {
+        EnemyBehavior.Shielded => "🛡",
+        EnemyBehavior.Venomous => "☠",
+        EnemyBehavior.Berserker => "⚡",
+        EnemyBehavior.Boss => "👑",
+        _ => ""
+    };
+
+    private static string GetBehaviorName(EnemyBehavior b) => b switch
+    {
+        EnemyBehavior.Shielded => "Escudo activo",
+        EnemyBehavior.Venomous => "Venenoso",
+        EnemyBehavior.Berserker => "Berserker",
+        EnemyBehavior.Boss => "JEFE FINAL",
+        _ => ""
+    };
+
+    private static string GetBehaviorBadgeClass(EnemyBehavior b) => b switch
+    {
+        EnemyBehavior.Boss => "badge-boss",
+        EnemyBehavior.Berserker => "badge-berserker",
+        EnemyBehavior.Venomous => "badge-venomous",
+        EnemyBehavior.Shielded => "badge-shielded",
+        _ => ""
+    };
 }

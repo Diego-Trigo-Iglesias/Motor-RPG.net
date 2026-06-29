@@ -25,6 +25,13 @@ public sealed class WebRenderer
     public CombatRound? LastRound { get; set; }
     public int LastRoundNum { get; set; }
 
+    // Nuevos campos para behaviors y mazmorra
+    public string EnemyBehaviorLabel { get; private set; } = "";
+    public string EnemyBehaviorIcon { get; private set; } = "";
+    public int DungeonFloor { get; set; } = 0;
+    public int DungeonMaxFloor { get; set; } = 5;
+    public bool HasPoison { get; set; }
+
     public SpriteData? PlayerSprite { get; set; }
     public SpriteData? EnemySprite { get; set; }
     public SpriteData? LocationSprite { get; set; }
@@ -59,7 +66,10 @@ public sealed class WebRenderer
         Inventory,
         Travel,
         Save,
-        Paused
+        Paused,
+        // Nuevas
+        DungeonEntrance,
+        DungeonFloor
     }
 
     // Métodos de renderizado
@@ -86,8 +96,9 @@ public sealed class WebRenderer
         PlayerSprite = SpriteData.FromPixelSprite(PlayerSprites.ForClass(p.Class));
         PlayerHp = new HpBarData { Current = p.CurrentHp, Max = p.MaxHp, Label = "HP" };
 
+        string poison = p.PoisonTurnsRemaining > 0 ? $" ☠ Veneno ({p.PoisonTurnsRemaining}t)" : "";
         StatusLine = $"{p.Name}  ({p.Class} Lv.{p.Level})  " +
-                     $"Oro: {p.Gold}  ATK: {p.TotalAttack}  DEF: {p.TotalDefense}";
+                     $"Oro: {p.Gold}  ATK: {p.TotalAttack}  DEF: {p.TotalDefense}{poison}";
     }
 
     public void PrintLocation(Location loc)
@@ -106,7 +117,15 @@ public sealed class WebRenderer
         EnemySprite = SpriteData.FromPixelSprite(EnemySprites.ForName(enemy.Name));
         PlayerHp = new HpBarData { Current = player.CurrentHp, Max = player.MaxHp, Label = $"{player.Name} HP" };
         EnemyHp = new HpBarData { Current = enemy.CurrentHp, Max = enemy.MaxHp, Label = $"{enemy.Name} HP" };
+
+        // Información de comportamiento
+        EnemyBehaviorLabel = GetBehaviorLabel(enemy);
+        EnemyBehaviorIcon = GetBehaviorIcon(enemy);
+        HasPoison = player.PoisonTurnsRemaining > 0;
+
         Messages.Add($"¡Encuentras a {enemy.Name}!");
+        if (enemy.Behavior != EnemyBehavior.Normal)
+            Messages.Add($"⚠ {GetBehaviorDescription(enemy.Behavior)} ⚠");
     }
 
     public void PrintCombatRound(Player player, Enemy enemy, CombatRound round, int roundNum)
@@ -115,18 +134,41 @@ public sealed class WebRenderer
         LastRoundNum = roundNum;
         PlayerHp = new HpBarData { Current = player.CurrentHp, Max = player.MaxHp, Label = $"{player.Name} HP" };
         EnemyHp = new HpBarData { Current = Math.Max(0, enemy.CurrentHp), Max = enemy.MaxHp, Label = $"{enemy.Name} HP" };
+        HasPoison = player.PoisonTurnsRemaining > 0;
 
+        // Mensaje de comportamiento
+        if (!string.IsNullOrEmpty(round.BehaviorMessage))
+            Messages.Add(round.BehaviorMessage);
+
+        // Veneno
+        if (round.PoisonDamage > 0)
+            Messages.Add($"☠ Veneno: -{round.PoisonDamage} HP ({player.PoisonTurnsRemaining} turnos restantes)");
+
+        // Ataque del jugador
+        string actionName = round.WasHeavyAttack ? "Ataque Fuerte" : round.PlayerDefended ? "Defensa" : "Ataque";
         if (round.EnemyDodged)
-            Messages.Add($"{enemy.Name} esquivó tu ataque.");
+            Messages.Add($"{enemy.Name} esquivó tu {actionName}.");
+        else if (round.ShieldActive)
+            Messages.Add($"{actionName} golpea el escudo! Daño reducido: {round.PlayerDamage}");
         else if (round.IsCritical)
             Messages.Add($"¡GOLPE CRÍTICO! {round.PlayerDamage} de daño.");
         else
-            Messages.Add($"Atacaste a {enemy.Name} por {round.PlayerDamage} de daño.");
+            Messages.Add($"{actionName}: {round.PlayerDamage} de daño a {enemy.Name}.");
 
-        if (round.PlayerDodged)
-            Messages.Add($"Esquivaste el ataque de {enemy.Name}.");
-        else
-            Messages.Add($"{enemy.Name} te golpeó por {round.EnemyDamage} de daño.");
+        // Contraataque enemigo
+        if (enemy.IsAlive && !round.PlayerDodged && round.EnemyDamage > 0)
+        {
+            string defSuffix = round.PlayerDefended ? " (mitigado por defensa)" : "";
+            Messages.Add($"{enemy.Name} te golpea por {round.EnemyDamage}{defSuffix}.");
+        }
+        else if (enemy.IsAlive && round.PlayerDodged)
+        {
+            Messages.Add($"Esquivas el ataque de {enemy.Name}!");
+        }
+
+        // Enfurecimiento
+        if (round.EnemyIsEnraged)
+            Messages.Add($"¡{enemy.Name} está ENFURECIDO!");
     }
 
     public void PrintVictory(Enemy enemy, int exp, int gold)
@@ -158,7 +200,11 @@ public sealed class WebRenderer
         Messages.Add($"HP: {player.CurrentHp}/{player.MaxHp} | ATK: {player.TotalAttack} | DEF: {player.TotalDefense}");
         Messages.Add($"Oro: {player.Gold} | EXP: {player.Experience}/{player.ExperienceToNextLevel}");
         Messages.Add($"Batallas: {state.TotalBattles} | Victorias: {state.TotalVictories}");
-        // Equipado
+        if (state.HasWon)
+            Messages.Add("★ ¡HAS COMPLETADO EL JUEGO! ★");
+        if (state.IsInDungeon)
+            Messages.Add($"⚠ EN MAZMORRA — Piso {state.DungeonFloor} ⚠");
+
         var eq = player.GetEquippedItems();
         if (eq.Count > 0)
         {
@@ -288,13 +334,15 @@ public sealed class WebRenderer
             Screen.Shop => "Shop",
             Screen.Travel => "Travel",
             Screen.Inventory => "Inventory",
+            Screen.DungeonEntrance => "DungeonEntrance",
+            Screen.DungeonFloor => "DungeonFloor",
             _ => "MainMenu"
         };
 
         var menu = CurrentScreen switch
         {
-            Screen.MainMenu => GetMainMenu(gameState?.CurrentLocation, player),
-            Screen.Combat => new[] { "[1] Atacar", "[2] Huir", "[3] Usar poción" },
+            Screen.MainMenu => GetMainMenu(gameState?.CurrentLocation, player, gameState),
+            Screen.Combat => GetCombatMenu(player),
             Screen.Victory => new[] { "[Enter] Continuar" },
             Screen.Defeat => new[] { "[Enter] Volver al inicio" },
             Screen.Title => new[] { "[Enter] Iniciar Aventura" },
@@ -302,6 +350,8 @@ public sealed class WebRenderer
             Screen.Travel => GetTravelMenu(gameState),
             Screen.Shop => GetShopMenu(player),
             Screen.Inventory => new[] { "[Enter] Volver" },
+            Screen.DungeonEntrance => new[] { "[1] Entrar", "[2] Volver" },
+            Screen.DungeonFloor => GetDungeonFloorMenu(player),
             _ => Array.Empty<string>()
         };
 
@@ -328,11 +378,19 @@ public sealed class WebRenderer
             messages = Messages,
             menu = menu,
             combatRound = LastRoundNum,
-            animations = new { isCritical = LastRound?.IsCritical ?? false }
+            animations = new { isCritical = LastRound?.IsCritical ?? false },
+            // Nuevos campos
+            enemyBehavior = EnemyBehaviorLabel,
+            enemyBehaviorIcon = EnemyBehaviorIcon,
+            hasPoison = HasPoison,
+            dungeonFloor = DungeonFloor,
+            dungeonMaxFloor = DungeonMaxFloor,
+            hasWon = gameState?.HasWon ?? false,
+            isInDungeon = gameState?.IsInDungeon ?? false
         };
     }
 
-    private string[] GetMainMenu(Location? loc, Player? player)
+    private string[] GetMainMenu(Location? loc, Player? player, GameState? gs)
     {
         var items = new List<string>();
         if (loc?.HasEnemies ?? false) items.Add("[1] Explorar");
@@ -345,19 +403,71 @@ public sealed class WebRenderer
         return items.ToArray();
     }
 
+    private string[] GetCombatMenu(Player? player)
+    {
+        var items = new List<string>
+        {
+            "[1] Atacar",
+            "[2] Ataque fuerte",
+            "[3] Defender"
+        };
+        if (player != null && GameActions.HasUsablePotion(player))
+            items.Add("[4] Usar poción");
+        items.Add("[5] Huir");
+        return items.ToArray();
+    }
+
+    private string[] GetDungeonFloorMenu(Player? player)
+    {
+        var items = new List<string> { "[1] Continuar" };
+        if (player != null && GameActions.HasUsablePotion(player))
+            items.Add("[2] Usar poción");
+        items.Add("[5] Huir de la mazmorra");
+        return items.ToArray();
+    }
+
     private string[] GetTravelMenu(GameState? gs)
     {
         if (gs == null) return new[] { "[Enter] Volver" };
         var items = new List<string>();
         int i = 1;
         foreach (var loc in World.Locations.Where(l => l.Id != gs.CurrentLocationId))
-            items.Add($"[{i++}] {loc.Name}");
+        {
+            string marker = loc.IsDungeon ? " ⚠ MAZMORRA" : "";
+            items.Add($"[{i++}] {loc.Name}{marker}");
+        }
         items.Add("[B] Volver");
         return items.ToArray();
     }
 
     private string[] GetShopMenu(Player? player) => ShopCatalog.MenuOptions();
+
+    // Helpers
+
+    private static string GetBehaviorLabel(Enemy e) => e.Behavior switch
+    {
+        EnemyBehavior.Shielded  => $"🛡 Escudo ({e.ShieldTurns} turnos)",
+        EnemyBehavior.Venomous  => "☠ Venenoso",
+        EnemyBehavior.Berserker => e.IsEnraged ? "⚡ ENFURECIDO" : "⚡ Berserker",
+        EnemyBehavior.Boss      => e.IsEnraged ? "👑 JEFE ⚡ ENFURECIDO" : "👑 JEFE FINAL",
+        _                       => ""
+    };
+
+    private static string GetBehaviorIcon(Enemy e) => e.Behavior switch
+    {
+        EnemyBehavior.Shielded  => "🛡",
+        EnemyBehavior.Venomous  => "☠",
+        EnemyBehavior.Berserker => "⚡",
+        EnemyBehavior.Boss      => "👑",
+        _                       => "⚔"
+    };
+
+    private static string GetBehaviorDescription(EnemyBehavior behavior) => behavior switch
+    {
+        EnemyBehavior.Shielded  => "Escudo mágico: reduce el daño los primeros 2 turnos",
+        EnemyBehavior.Venomous  => "Ataque venenoso: aplica veneno que daña por turno",
+        EnemyBehavior.Berserker => "Enfurece al 50% de HP: duplica su ataque",
+        EnemyBehavior.Boss      => "JEFE FINAL: carga energía 2 turnos y desata un ataque masivo",
+        _                       => ""
+    };
 }
-
-
-
