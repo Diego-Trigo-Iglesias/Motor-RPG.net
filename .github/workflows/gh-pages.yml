@@ -20,14 +20,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-<<<<<<< HEAD
       - name: Run Tests
         run: |
           dotnet test src/TextRPG.Tests/TextRPG.Tests.csproj \
             -c Release
 
-=======
->>>>>>> 2636d9025ffdefb1669e30be47808bb0ad58285d
       - name: Publish Blazor WASM
         run: |
           dotnet publish src/TextRPG.Web/TextRPG.Web.csproj \
